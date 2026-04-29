@@ -15,22 +15,22 @@ Identify OWASP Top 10 vulnerabilities and security misconfigurations in Python w
 
 ## OWASP Categories
 
-| Category                  | Code | Focus Area                                                                                            |
-|---------------------------|------|-------------------------------------------------------------------------------------------------------|
-| Broken Access Control     | A01  | Ownership checks, IDOR, privilege escalation, CSRF                                                    |
-| Cryptographic Failures    | A02  | Password hashing, token generation, JWT, TLS verification, timing attacks, weak ciphers, data exposure |
-| Injection                 | A03  | SQL, XSS, command injection, SSTI, XXE, path traversal, log injection                                 |
-| Insecure Design           | A04  | Mass assignment, business-logic flaws, missing rate limits on sensitive flows                         |
-| Security Misconfiguration | A05  | CORS, cookies, headers, debug mode, trusted-proxy boundaries                                          |
-| Vulnerable Components     | A06  | Dependency scanning (`pip-audit`, `safety`, `osv-scanner`)                                            |
-| Auth Failures             | A07  | Password handling, session management, MFA, webhook signature verification                            |
-| Data Integrity            | A08  | Deserialization, YAML/pickle, eval, decompression bombs                                               |
-| Logging Failures          | A09  | Auth events, log injection                                                                            |
-| SSRF                      | A10  | URL fetching with user input, metadata endpoint, DNS rebinding                                        |
-| Unbounded Input           | -    | Missing length limits on string fields, unbounded JSON bodies                                         |
-| Resource Exhaustion       | -    | ReDoS, decompression bombs, unbounded recursion                                                       |
-| Race / TOCTOU             | -    | Async shared state, idempotency, file create-then-check                                               |
-| Policy Consistency        | -    | Settings/UI promise X but code does not enforce X                                                     |
+| Category                  | Code | Focus Area                                                                                              |
+|---------------------------|------|---------------------------------------------------------------------------------------------------------|
+| Broken Access Control     | A01  | Ownership checks, IDOR, privilege escalation, CSRF                                                      |
+| Cryptographic Failures    | A02  | Password hashing, token generation, JWT, TLS verification, timing attacks, weak ciphers, data exposure  |
+| Injection                 | A03  | SQL, XSS, command injection, SSTI, XXE, path traversal, log injection                                   |
+| Insecure Design           | A04  | Mass assignment, business-logic flaws, missing rate limits on sensitive flows                           |
+| Security Misconfiguration | A05  | CORS, cookies, headers, debug mode, trusted-proxy boundaries                                            |
+| Vulnerable Components     | A06  | Dependency scanning (`pip-audit`, `safety`, `osv-scanner`)                                              |
+| Auth Failures             | A07  | Password handling, session management, MFA, webhook signature verification                              |
+| Data Integrity            | A08  | Deserialization, YAML/pickle, eval, decompression bombs                                                 |
+| Logging Failures          | A09  | Auth events, log injection                                                                              |
+| SSRF                      | A10  | URL fetching with user input, metadata endpoint, DNS rebinding                                          |
+| Unbounded Input           | -    | Missing length limits on string fields, unbounded JSON bodies                                           |
+| Resource Exhaustion       | -    | ReDoS, decompression bombs, unbounded recursion                                                         |
+| Race / TOCTOU             | -    | Async shared state, idempotency, file create-then-check                                                 |
+| Policy Consistency        | -    | Settings/UI promise X but code does not enforce X                                                       |
 
 ## Optional Modules (Dynamic Discovery)
 
