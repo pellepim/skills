@@ -17,15 +17,19 @@ Identify OWASP Top 10 vulnerabilities and security misconfigurations in Python w
 
 | Category | Code | Focus Area |
 |----------|------|------------|
-| Broken Access Control | A01 | Ownership checks, IDOR, privilege escalation |
-| Cryptographic Failures | A02 | Password hashing, token generation, data exposure |
-| Injection | A03 | SQL injection, XSS |
+| Broken Access Control | A01 | Ownership checks, IDOR, privilege escalation, CSRF |
+| Cryptographic Failures | A02 | Password hashing, token generation, JWT, TLS verification, timing attacks, weak ciphers, data exposure |
+| Injection | A03 | SQL, XSS, command injection, SSTI, XXE, path traversal, log injection |
+| Insecure Design | A04 | Mass assignment, business-logic flaws, missing rate limits on sensitive flows |
 | Security Misconfiguration | A05 | CORS, cookies, headers, debug mode, trusted-proxy boundaries |
-| Vulnerable Components | A06 | Dependency scanning (separate concern) |
-| Auth Failures | A07 | Password handling, session management, MFA |
-| Data Integrity | A08 | Deserialization, YAML/pickle, eval |
+| Vulnerable Components | A06 | Dependency scanning (`pip-audit`, `safety`, `osv-scanner`) |
+| Auth Failures | A07 | Password handling, session management, MFA, webhook signature verification |
+| Data Integrity | A08 | Deserialization, YAML/pickle, eval, decompression bombs |
 | Logging Failures | A09 | Auth events, log injection |
+| SSRF | A10 | URL fetching with user input, metadata endpoint, DNS rebinding |
 | Unbounded Input | - | Missing length limits on string fields, unbounded JSON bodies |
+| Resource Exhaustion | - | ReDoS, decompression bombs, unbounded recursion |
+| Race / TOCTOU | - | Async shared state, idempotency, file create-then-check |
 | Policy Consistency | - | Settings/UI promise X but code does not enforce X |
 
 ## Optional Modules (Dynamic Discovery)
@@ -130,6 +134,114 @@ el.textContent = data.name;
 - [ ] Check API responses that reflect user input
 - [ ] Verify CSP headers are configured
 
+**Command Injection — Red Flags:**
+```python
+# VULNERABLE - shell=True with interpolation
+subprocess.run(f"convert {filename} out.png", shell=True)
+subprocess.Popen(f"git clone {repo_url}", shell=True)
+os.system(f"ping {host}")
+os.popen(f"grep {pattern} file")
+
+# VULNERABLE - shell=True with list joined back into a string
+subprocess.run(" ".join(args), shell=True)
+
+# SAFE - argv list, no shell
+subprocess.run(["convert", filename, "out.png"], shell=False, check=True)
+subprocess.run(["git", "clone", repo_url], check=True)
+
+# SAFE - if shell truly needed (rare)
+subprocess.run(f"convert {shlex.quote(filename)} out.png", shell=True, check=True)
+```
+
+**Command Injection — Checklist:**
+- [ ] Grep for `shell=True` — every hit must use a static command or `shlex.quote` on every interpolated value
+- [ ] Grep for `os.system`, `os.popen`, `commands.getoutput` — replace with `subprocess.run([...])`
+- [ ] No user input flowing into `Popen(args, shell=True)` or `subprocess.call(str)`
+- [ ] `git`, `convert`, `ffmpeg`, `pdftk`, `tar`, `unzip` invocations use argv list form
+- [ ] PATH not user-controllable (env vars sanitized for spawned processes)
+
+**SSTI (Server-Side Template Injection) — Red Flags:**
+```python
+# VULNERABLE - Jinja2 rendering user-controlled template
+from jinja2 import Template
+Template(user_input).render(...)
+env.from_string(user_input).render(...)
+
+# VULNERABLE - Flask render_template_string with user input
+return render_template_string(f"<h1>Hello {name}</h1>")  # name = "{{config}}" leaks app config
+
+# VULNERABLE - Django Template engine on user input
+Template(user_input).render(Context({}))
+
+# SAFE - render fixed template, pass user data as variable
+return render_template("greeting.html", name=name)
+return render_template_string("<h1>Hello {{ name }}</h1>", name=name)
+```
+
+**SSTI — Checklist:**
+- [ ] No user input passed as template *source* to `Template(...)`, `Environment.from_string(...)`, `render_template_string(...)`
+- [ ] User input only passed as *variables* into pre-authored templates
+- [ ] If user-authored templates are a feature (CMS, email templates), use `jinja2.SandboxedEnvironment` AND assume sandbox bypass exists; isolate the renderer
+- [ ] Grep for `from_string`, `render_template_string`, `Template(` near request data
+
+**XXE / Unsafe XML — Red Flags:**
+```python
+# VULNERABLE - stdlib XML with external entities
+import xml.etree.ElementTree as ET
+tree = ET.fromstring(user_xml)  # billion laughs and external entities still possible in older runtimes
+import xml.sax
+xml.sax.parseString(user_xml, handler)
+from lxml import etree
+etree.fromstring(user_xml)  # resolve_entities=True by default
+
+# VULNERABLE - XML-RPC / SOAP with default parsers
+xmlrpc.client.loads(user_payload)
+
+# SAFE
+from defusedxml import ElementTree as ET
+ET.fromstring(user_xml)
+
+from defusedxml.lxml import fromstring
+fromstring(user_xml)
+
+# SAFE - lxml with hardened parser
+parser = etree.XMLParser(resolve_entities=False, no_network=True, huge_tree=False)
+etree.fromstring(user_xml, parser)
+```
+
+**XXE — Checklist:**
+- [ ] Replace `xml.etree`, `xml.sax`, `xml.dom`, `xmlrpc`, `lxml.etree.fromstring` on untrusted input with `defusedxml` equivalents
+- [ ] `lxml` parsers explicitly set `resolve_entities=False`, `no_network=True`, `huge_tree=False`
+- [ ] SOAP/SAML/OOXML/SVG/RSS/Atom parsers reviewed (all are XML)
+- [ ] DOCTYPE declarations rejected on untrusted input (no DTD parsing)
+
+**Path Traversal — Red Flags:**
+```python
+# VULNERABLE
+open(os.path.join(BASE_DIR, user_filename))  # "../../etc/passwd"
+Path(BASE_DIR) / user_filename                # same problem
+send_file(f"uploads/{user_path}")
+os.remove(user_path)
+
+# VULNERABLE - resolve() not boundary-checked
+target = Path(BASE_DIR / user_filename).resolve()
+return target.read_text()  # symlink/.. still escapes
+
+# SAFE - resolve and verify under base
+base = Path(BASE_DIR).resolve()
+target = (base / user_filename).resolve()
+if not target.is_relative_to(base):
+    raise PermissionError("path traversal")
+return target.read_text()
+```
+
+**Path Traversal — Checklist:**
+- [ ] Every `open(...)`, `Path(...)`, `send_file(...)`, `os.remove`, `shutil.copy/move`, `pathlib` op on user input goes through a base-directory boundary check
+- [ ] Use `Path.resolve()` + `is_relative_to(base.resolve())` (Python 3.9+) or equivalent prefix check on `realpath`
+- [ ] Reject filenames containing `..`, `/`, `\`, null bytes (`\x00`), and Windows drive prefixes (`C:`)
+- [ ] Prefer generated identifiers (UUID + extension) over user-supplied names
+- [ ] Symlink-following ops (`open`, `os.path.realpath`) considered: attacker may write a symlink and read across it
+
 #### Authentication (A07)
 
 **Red Flags:**
@@ -188,9 +300,9 @@ def update_profile(user, ...):
 - [ ] Policy checks enforced in business logic layer, not just HTTP handlers
 - [ ] CRUD lifecycle consistency (if create requires elevated role, update/delete should too)
 
-#### Sensitive Data Exposure (A02)
+#### Cryptographic Failures (A02)
 
-**Red Flags:**
+**Sensitive Data Exposure — Red Flags:**
 ```python
 # VULNERABLE
 logger.debug(f"User login: {email}, password: {password}")
@@ -198,12 +310,121 @@ return {"error": str(exception)}  # May leak internals
 SECRET_KEY = "hardcoded-secret-123"
 ```
 
-**Checklist:**
+**Sensitive Data — Checklist:**
 - [ ] Passwords never logged
 - [ ] API responses don't leak internal fields (stack traces, DB errors)
 - [ ] Error messages don't reveal system internals
-- [ ] Secrets not hardcoded in source
+- [ ] Secrets not hardcoded in source (grep for `SECRET`, `KEY`, `TOKEN`, `PASSWORD` in `.py`/`.env.example`)
 - [ ] Sensitive data not in URL parameters (appears in logs, referrer headers)
+
+**Weak Randomness — Red Flags:**
+```python
+# VULNERABLE - random module is NOT cryptographically secure
+import random
+token = "".join(random.choices(string.ascii_letters, k=32))
+otp = random.randint(100000, 999999)
+session_id = str(uuid.uuid1())  # uuid1 is timestamp-based, predictable
+
+# SAFE
+import secrets
+token = secrets.token_urlsafe(32)
+otp = secrets.randbelow(900000) + 100000
+session_id = secrets.token_hex(16)  # or uuid.uuid4() (random) — never uuid1
+```
+
+**Weak Randomness — Checklist:**
+- [ ] `random.*` not used for tokens, session IDs, OTPs, password reset codes, nonces, keys
+- [ ] `uuid.uuid1()` not used for security-relevant IDs (use `uuid4` or `secrets`)
+- [ ] `os.urandom`, `secrets.token_*`, `secrets.randbelow` for all security-sensitive randomness
+
+**Timing Attacks — Red Flags:**
+```python
+# VULNERABLE - == leaks timing
+if api_key == stored_key: ...
+if token == expected_token: ...
+if hmac_digest == provided: ...
+
+# SAFE
+import hmac
+if hmac.compare_digest(api_key, stored_key): ...
+if hmac.compare_digest(token.encode(), expected.encode()): ...
+```
+
+**Timing — Checklist:**
+- [ ] Secret/token/HMAC/signature comparison uses `hmac.compare_digest`, never `==`
+- [ ] Constant-time comparison for password verification (handled by bcrypt/argon2 verify functions; do not roll your own)
+
+**JWT — Red Flags:**
+```python
+# VULNERABLE - no algorithm restriction (alg=none accepted)
+jwt.decode(token, key)
+jwt.decode(token, key, verify=False)
+jwt.decode(token, key, options={"verify_signature": False})
+
+# VULNERABLE - accepts both HS256 and RS256 (algorithm confusion when key is RSA pub)
+jwt.decode(token, public_key_pem, algorithms=["HS256", "RS256"])
+
+# VULNERABLE - no aud/iss validation
+jwt.decode(token, key, algorithms=["RS256"])  # missing audience/issuer
+
+# SAFE
+jwt.decode(token, key, algorithms=["RS256"], audience="my-api", issuer="https://issuer.example")
+```
+
+**JWT — Checklist:**
+- [ ] `algorithms=` always passed explicitly; never trust the `alg` header
+- [ ] `none` algorithm rejected (do not include in `algorithms=`)
+- [ ] `HS256` and `RS256` not both accepted with the same key material (algorithm confusion)
+- [ ] `aud` and `iss` claims validated
+- [ ] `exp` enforced; clock skew bounded (typical 30-60s leeway, not minutes)
+- [ ] `kid` header values constrained (no path traversal, no unbounded JWKS lookup)
+- [ ] HMAC keys have ≥256 bits of entropy (random, not "secret")
+- [ ] Public/private key pairs not committed; rotated with overlap window
+
+**TLS Verification — Red Flags:**
+```python
+# VULNERABLE
+requests.get(url, verify=False)
+httpx.get(url, verify=False)
+urllib3.disable_warnings(InsecureRequestWarning)
+ssl_context = ssl._create_unverified_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
+
+# SAFE - default verify=True; for custom CA bundle:
+requests.get(url, verify="/etc/ssl/internal-ca.pem")
+```
+
+**TLS — Checklist:**
+- [ ] No `verify=False` on `requests`, `httpx`, `aiohttp`, `urllib3`
+- [ ] No `ssl.CERT_NONE`, no `_create_unverified_context`, no `check_hostname=False`
+- [ ] No `urllib3.disable_warnings(InsecureRequestWarning)` (signal of disabled verify nearby)
+- [ ] Internal services with private CA use `verify=<ca_bundle_path>`, not disabled verification
+- [ ] Test fixtures with disabled verify isolated to test code (grep for `verify=False` outside `tests/`)
+
+**Symmetric Crypto — Red Flags:**
+```python
+# VULNERABLE - ECB mode (patterns leak), DES, MD5/SHA1 for HMAC
+Cipher(algorithms.AES(key), modes.ECB())
+Cipher(algorithms.TripleDES(key), modes.CBC(iv))
+
+# VULNERABLE - reused nonce with AES-GCM (catastrophic)
+nonce = b"\x00" * 12
+aesgcm.encrypt(nonce, pt, aad)  # reusing the same nonce across messages breaks confidentiality AND integrity
+
+# SAFE - AES-GCM with fresh nonce per message
+nonce = secrets.token_bytes(12)
+ct = aesgcm.encrypt(nonce, pt, aad)
+# store/transmit nonce alongside ct
+```
+
+**Symmetric Crypto — Checklist:**
+- [ ] No ECB mode for anything except single-block primitives
+- [ ] No DES / 3DES / RC4 / MD5 / SHA1 for new code
+- [ ] AEAD (AES-GCM, ChaCha20-Poly1305) preferred over unauthenticated CBC/CTR
+- [ ] Nonces/IVs random per-message (`secrets.token_bytes`) or strict counter; never reused with the same key
+- [ ] Keys come from a KMS / secret store, not hardcoded or .env in repo
+- [ ] Use `cryptography` library, not `pycrypto` (unmaintained) or hand-rolled crypto
 
 #### Security Misconfiguration (A05)
 
@@ -325,6 +546,236 @@ host = request.headers.get("x-forwarded-host") or request.headers.get("host")
 - [ ] Every `x-forwarded-host` / `x-forwarded-proto` / `x-forwarded-for` read is either (a) non-security (logging, cosmetic) OR (b) gated by a trusted-proxy allowlist
 - [ ] Security-relevant derivations (tenant routing, rate-limit keys, origin checks) prefer server-side sources over header derivation
 - [ ] Container/deploy config does NOT expose the app port directly; only the reverse proxy is externally reachable
+
+#### SSRF (A10)
+
+**Red Flags:**
+```python
+# VULNERABLE - any user-controlled URL fetched
+requests.get(user_url)
+httpx.get(request.json["webhook_url"])
+urlopen(image_url)
+
+# VULNERABLE - "validation" by string match (bypassable)
+if "internal" not in url:
+    requests.get(url)  # http://attacker.com#internal works; DNS rebinding works
+
+# VULNERABLE - PDF/HTML rendering of user content fetches sub-resources
+weasyprint.HTML(string=user_html).write_pdf()  # <img src="http://169.254.169.254/...">
+
+# SAFE - parse, allowlist scheme/host, resolve to IP, block private ranges
+from urllib.parse import urlparse
+import ipaddress, socket
+def safe_fetch(url: str) -> bytes:
+    p = urlparse(url)
+    if p.scheme not in ("http", "https"): raise ValueError("scheme")
+    if p.hostname is None: raise ValueError("host")
+    addrs = {ai[4][0] for ai in socket.getaddrinfo(p.hostname, None)}
+    for a in addrs:
+        ip = ipaddress.ip_address(a)
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast or ip.is_reserved:
+            raise ValueError("private address")
+    # NOTE: still vulnerable to DNS rebinding between this check and the actual
+    # fetch. For high-value endpoints, fetch via egress proxy that re-validates.
+    return requests.get(url, timeout=5, allow_redirects=False).content
+```
+
+**Attack Scenarios:**
+- Cloud metadata exfiltration: `http://169.254.169.254/latest/meta-data/iam/security-credentials/` (AWS), `http://metadata.google.internal/` (GCP), `http://169.254.169.254/metadata/instance?api-version=2021-02-01` (Azure, requires `Metadata: true` header — but webhook senders that forward headers may add it).
+- Internal service access: Redis (`http://internal-redis:6379/`), unauthenticated admin endpoints, internal Elasticsearch.
+- DNS rebinding: attacker-controlled domain resolves to public IP at validation time and 169.254.169.254 at fetch time.
+- Schemes beyond http: `file://`, `gopher://` (used to forge raw TCP), `dict://`, `ftp://`.
+
+**Checklist:**
+- [ ] Every `requests`, `httpx`, `aiohttp`, `urllib`, `urlopen` call on user-influenced URLs is wrapped in an SSRF guard
+- [ ] Scheme allowlist: `http`, `https` only (no `file`, `gopher`, `dict`, `ftp`)
+- [ ] Resolve hostname to IP and block private (RFC1918), loopback, link-local (`169.254/16`, including IPv6 `fe80::/10` and `fd00::/8`), multicast, reserved
+- [ ] IP literal hosts (`http://10.0.0.1/`, decimal-encoded `http://2130706433/`) blocked
+- [ ] `allow_redirects=False` or redirect target re-validated (attacker can redirect to internal target)
+- [ ] Timeouts set on all outbound HTTP (5-10s typical)
+- [ ] For high-value flows (webhooks, image proxy, PDF rendering): outbound traffic via dedicated egress proxy with allowlist + IP re-validation per connection (defeats DNS rebinding)
+- [ ] Header allowlist on outbound requests (do NOT forward client `Authorization`, `Cookie`, `Metadata`, `X-aws-ec2-metadata-token`)
+- [ ] Cloud metadata endpoints explicitly blocked even if private-IP check exists (defense in depth)
+- [ ] PDF/HTML/SVG/Markdown renderers that follow `<img>`, `<link>`, `<iframe>` either disable network fetch or route through SSRF guard
+
+#### Webhook Signature Verification
+
+**Red Flags:**
+```python
+# VULNERABLE - no signature verification
+@app.post("/webhooks/stripe")
+def stripe_hook(payload: dict):
+    if payload["type"] == "invoice.paid":
+        mark_paid(payload["data"])  # attacker can POST arbitrary events
+
+# VULNERABLE - == comparison leaks timing
+expected = hmac.new(secret, body, sha256).hexdigest()
+if expected == request.headers["X-Signature"]:
+    process(body)
+
+# VULNERABLE - no replay window
+# attacker captures one valid webhook and replays it forever
+
+# SAFE
+import hmac, hashlib, time
+def verify(body: bytes, sig_header: str, ts_header: str, secret: bytes, tolerance: int = 300):
+    ts = int(ts_header)
+    if abs(time.time() - ts) > tolerance:
+        raise ValueError("timestamp outside tolerance")
+    expected = hmac.new(secret, f"{ts}.".encode() + body, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, sig_header):
+        raise ValueError("bad signature")
+```
+
+**Checklist:**
+- [ ] Every inbound webhook (Stripe, GitHub, Slack, Twilio, SendGrid, custom) verifies signature before any side effect
+- [ ] HMAC compared with `hmac.compare_digest`, never `==`
+- [ ] Signature input includes a timestamp; verifier enforces a tolerance window (typical 5 min)
+- [ ] Replay protection: timestamp window OR nonce tracking with TTL
+- [ ] Raw request body used for HMAC (not the parsed-then-reserialized JSON; reserialization changes bytes)
+- [ ] Webhook secret stored in secret manager, rotatable, not committed
+- [ ] Failed verifications logged with caller IP for abuse monitoring
+
+#### Mass Assignment (A04)
+
+**Red Flags:**
+```python
+# VULNERABLE - request body splatted into ORM (attacker sets is_admin, tenant_id, balance)
+user = User(**request.json)
+db.session.add(user)
+
+# VULNERABLE - update from arbitrary dict
+for k, v in request.json.items():
+    setattr(user, k, v)
+
+# VULNERABLE - Django ModelForm with no fields restriction
+class UserForm(ModelForm):
+    class Meta:
+        model = User
+        fields = "__all__"  # exposes is_staff, is_superuser, etc.
+
+# VULNERABLE - Pydantic model_validate -> ORM kwargs
+data = UserCreate.model_validate(request.json)
+User.objects.create(**data.model_dump())  # only safe if UserCreate is a tight allowlist
+
+# SAFE - explicit allowlist
+ALLOWED = {"name", "bio", "avatar_url"}
+for k in ALLOWED & request.json.keys():
+    setattr(user, k, request.json[k])
+```
+
+**Checklist:**
+- [ ] No `Model(**request.json)`, `Model(**request.form)`, `Model(**body.dict())` patterns
+- [ ] DRF serializers list `fields = [...]` explicitly, never `__all__` for write paths
+- [ ] Django `ModelForm.Meta.fields` lists permitted fields explicitly
+- [ ] Pydantic input models distinct from ORM models; input model contains only client-settable fields
+- [ ] Sensitive fields (`is_admin`, `is_staff`, `tenant_id`, `user_id`, `role`, `balance`, `email_verified`) only set by server-side logic, never copied from request
+- [ ] Update endpoints use partial-update allowlists, not full-object replacement from request body
+
+#### ReDoS (Regex Denial of Service)
+
+**Red Flags:**
+```python
+# VULNERABLE - catastrophic backtracking on user input
+re.match(r"^(a+)+$", user_input)
+re.match(r"^(\w+\s?)*$", user_input)
+re.match(r"^([a-zA-Z0-9]+)*@", user_input)  # nested quantifiers
+
+# VULNERABLE - user-controlled regex pattern
+re.match(request.args["pattern"], target)  # attacker crafts pathological regex
+```
+
+**Checklist:**
+- [ ] No user input as regex *pattern* (only as input to a static pattern)
+- [ ] Nested quantifiers (`(a+)+`, `(a*)*`, `(.+)*`) audited; refactor to non-backtracking forms
+- [ ] Long input + complex regex combinations have a length cap on input before matching
+- [ ] For untrusted regex evaluation, use `re2` (Google RE2 bindings) — linear time, no backtracking
+- [ ] Validators (email, URL) use vetted libraries, not hand-rolled regex
+
+#### Decompression Bombs (A08)
+
+**Red Flags:**
+```python
+# VULNERABLE - reads entire decompressed payload into memory
+import gzip, zipfile, tarfile
+data = gzip.decompress(request.body)              # 10 KB compressed -> 10 GB
+zipfile.ZipFile(uploaded).extractall("/tmp/x")    # zip slip + bomb
+tarfile.open(uploaded).extractall("/tmp/x")       # tar slip + bomb + symlink escape
+
+# VULNERABLE - HTTP client auto-decompresses without size cap
+requests.get(url).text  # Content-Encoding: gzip with 1000:1 ratio
+
+# SAFE - cap decompressed size + check ratio + safe extract
+def safe_gunzip(data: bytes, max_bytes: int = 50_000_000) -> bytes:
+    out = bytearray()
+    with gzip.GzipFile(fileobj=io.BytesIO(data)) as f:
+        while chunk := f.read(64 * 1024):
+            out.extend(chunk)
+            if len(out) > max_bytes:
+                raise ValueError("decompression bomb")
+    return bytes(out)
+
+def safe_extract_zip(zf: zipfile.ZipFile, dest: Path, max_total: int):
+    dest = dest.resolve()
+    total = 0
+    for member in zf.infolist():
+        # zip slip
+        target = (dest / member.filename).resolve()
+        if not target.is_relative_to(dest):
+            raise ValueError("zip slip")
+        # bomb
+        total += member.file_size
+        if total > max_total or member.file_size > max_total:
+            raise ValueError("zip bomb")
+        zf.extract(member, dest)
+```
+
+**Checklist:**
+- [ ] Decompression of user-supplied data is size-capped (streaming with running total)
+- [ ] Compression-ratio sanity check on inbound gzip/deflate (reject ratios > ~100:1 for unknown content)
+- [ ] `ZipFile.extractall` and `tarfile.extractall` never used directly on untrusted archives — manual loop with path-boundary check (zip slip / tar slip)
+- [ ] `tarfile` symlink/hardlink members rejected or resolved (CVE-2007-4559 family)
+- [ ] Pillow images: cap `Image.MAX_IMAGE_PIXELS`; call `verify()` before `load()`; check dimensions before decode
+- [ ] HTTP clients fetching untrusted URLs cap response size (stream + abort over limit)
+
+#### Race Conditions / TOCTOU
+
+**Red Flags:**
+```python
+# VULNERABLE - check-then-use on filesystem (TOCTOU)
+if not os.path.exists(path):
+    open(path, "w").write(data)  # attacker creates symlink between check and open
+
+# VULNERABLE - duplicate side effects (no idempotency)
+@app.post("/charge")
+def charge(req):
+    db.charge_card(req.user_id, req.amount)  # double-click = double charge
+
+# VULNERABLE - shared mutable state in async handler
+counter = {"n": 0}
+async def handler():
+    counter["n"] += 1  # await between read and write = lost updates
+
+# SAFE - atomic create
+fd = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+os.write(fd, data); os.close(fd)
+
+# SAFE - idempotency key
+@app.post("/charge")
+def charge(req, idempotency_key: str = Header(...)):
+    if seen(idempotency_key): return prior_result(idempotency_key)
+    result = db.charge_card(req.user_id, req.amount)
+    record(idempotency_key, result, ttl=86400)
+    return result
+```
+
+**Checklist:**
+- [ ] No filesystem `os.path.exists` / `stat` followed by `open` on a path that crosses a trust boundary; use `O_CREAT | O_EXCL` or atomic `rename`
+- [ ] Money-moving / account-mutating endpoints accept and dedupe on an `Idempotency-Key`
+- [ ] Async handlers do not share mutable Python state across `await` points without a lock (`asyncio.Lock`)
+- [ ] DB-level uniqueness or `SELECT ... FOR UPDATE` for "check uniqueness then insert" patterns (avoid app-layer race)
+- [ ] Outbound HTTP/DB calls have explicit timeouts (no `await` without timeout in critical paths)
+- [ ] Auth flows: token consumption (`UPDATE ... WHERE token=X AND used=false RETURNING ...`) atomic, not select-then-update
 
 #### Redirect Validation
 
