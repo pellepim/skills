@@ -851,10 +851,49 @@ Report all findings to the user. Do not modify any code.
 
 ## Severity Guide
 
+General floor:
 - **Critical:** RCE, full database access, authentication bypass
 - **High:** Data breach potential, privilege escalation, IDOR
 - **Medium:** XSS, CSRF on sensitive actions, information disclosure
 - **Low:** Missing headers, minor misconfigurations, theoretical risks
+
+### Per-category severity floor
+
+When the rubric below disagrees with intuition, use the higher severity. Authentication and authorization findings start at **High**.
+
+| Finding | Floor | Promotes to |
+|---------|-------|-------------|
+| `eval` / `exec` / `pickle.loads` on untrusted input | Critical | — |
+| Command injection (`shell=True` with user input) | Critical | — |
+| SSTI on a request-reachable path | Critical | — |
+| SQL injection on authenticated endpoint | High | Critical if pre-auth or admin role |
+| SSRF reaching cloud metadata or internal services | High | Critical if exfil already possible |
+| Path traversal write | High | Critical if writes to executable / cron path |
+| Path traversal read | Medium | High if reads secrets / tokens |
+| Auth bypass (missing `permission_classes`, missing `Depends`) | High | Critical if admin-equivalent |
+| IDOR on owned resource | High | Critical if cross-tenant |
+| JWT `alg=none` or algorithm confusion accepted | Critical | — |
+| TLS verification disabled (`verify=False`) on prod path | High | Critical if used for auth tokens |
+| Webhook signature verification missing | High | — |
+| Hardcoded production secret in repo | Critical | — |
+| Hardcoded test secret confused for prod | Medium | — |
+| `mark_safe` / `\| safe` / `innerHTML` with user input | Medium | High if reflects to other users |
+| CSRF missing on state-changing endpoint | Medium | High for money/account-mutating |
+| Mass assignment on a model with privilege fields | High | Critical if `is_admin`/`is_staff` settable |
+| Decompression bomb / ZIP slip on untrusted archives | High | — |
+| ReDoS reachable from user input | Medium | High if pre-auth |
+| Weak randomness for tokens / OTPs | High | — |
+| Timing attack on token comparison (`==`) | Medium | High if pre-auth & remotely measurable |
+| Missing rate limit on auth / email-trigger endpoint | Medium | High if free-tier abuse / cost amplification |
+| CORS `allow_origins=["*"]` with `allow_credentials=True` | High | — |
+| Forwarded-header trust without proxy allowlist | Medium | High if used for tenant routing or origin check |
+| Missing security headers (HSTS, CSP, X-Frame-Options) | Low | Medium if app handles credentials and lacks all of them |
+| Debug mode enabled in production | Critical | — |
+| Open redirect | Low | Medium if used in OAuth/SSO flow |
+| Logging of passwords / tokens | High | — |
+| Missing length cap on input field | Low | Medium for pre-auth, Critical for body without overall cap |
+| Insecure deserialization (`yaml.load`, `pickle`) | Critical | — |
+| XXE on untrusted XML | High | Critical if file:// readable / SSRF possible |
 
 ## Delegating to Subagents
 
@@ -892,6 +931,49 @@ cursor.execute(query, (email,))
 
 ---
 ```
+
+## Negative Findings (Evidence Required)
+
+A clean review is more credible when the absence of issues is *demonstrated*, not asserted. Every report includes a "checked but clean" section. The bar is the same one applied to subagent reports: cite `file:line` evidence.
+
+```markdown
+## Categories Checked
+
+### Triggered (see Findings above)
+- A03 Injection — SQL injection in `app/api/users.py:42`
+- A02 Cryptographic Failures — `verify=False` in `app/integrations/legacy.py:18`
+
+### Clean (with evidence)
+- A01 Broken Access Control — ownership check at `app/views/document.py:31` (`if doc.owner_id != user.id: raise PermissionError`); IDOR-prone routes verified
+- A03 Command Injection — no `shell=True` or `os.system` in changed files (`grep -rn "shell=True\|os\.system" app/` returned 0)
+- A03 SSTI — no `render_template_string` or `Template(` with user input (grep clean)
+- A10 SSRF — outbound HTTP calls in `app/integrations/webhooks.py:55` go through `safe_fetch()` (allowlist + private-IP block)
+- A07 JWT — `algorithms=["RS256"]` pinned at `app/auth/jwt.py:14`; `aud` and `iss` validated
+
+### Skipped (with reason)
+- A06 Vulnerable Components — `pip-audit` clean as of pre-pass; full dependency review out of scope for this PR
+
+## Modules
+
+### Loaded
+- `fastapi.md` (matched framework:fastapi)
+- `sqlalchemy.md` (matched dependency:sqlalchemy)
+- `secrets.md` (always-on)
+
+### Skipped
+- `saml.md` — no SAML usage detected
+- `webauthn.md` — no WebAuthn usage detected
+```
+
+Reports without this section are incomplete. "Looks fine" / "checked, OK" is not acceptable. If a category cannot be evidenced (no relevant code in scope), say so explicitly under Skipped with the reason.
+
+## Module Versioning Rule
+
+Every module declares `version: <int>` and `last_updated: YYYY-MM-DD` in frontmatter.
+
+- **Bump `version`** when a checklist item is added, removed, or its meaning changes. Cosmetic edits (typo fixes, link updates) do not bump.
+- **Update `last_updated`** on every merge that touches the module.
+- A module with `last_updated` older than 12 months should be revisited as part of any review that loads it.
 
 ## What You Cannot Do
 
