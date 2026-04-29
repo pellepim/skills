@@ -1,0 +1,28 @@
+rules:
+  - id: no-tls-verify-false
+    message: |
+      TLS certificate verification disabled. `verify=False` accepts any
+      certificate and breaks authenticity guarantees, enabling MITM.
+      Remove `verify=False`, or pass a CA bundle path
+      (`verify="/etc/ssl/internal-ca.pem"`) for private CAs.
+    severity: ERROR
+    languages: [python]
+    metadata:
+      category: security
+      cwe: "CWE-295: Improper Certificate Validation"
+      owasp: "A02:2021 - Cryptographic Failures"
+      references:
+        - https://requests.readthedocs.io/en/latest/user/advanced/#ssl-cert-verification
+    pattern-either:
+      - pattern: requests.$M(..., verify=False, ...)
+      - pattern: httpx.$M(..., verify=False, ...)
+      - pattern: aiohttp.$M(..., verify=False, ...)
+      - pattern: urllib3.$M(..., cert_reqs="CERT_NONE", ...)
+      - pattern: ssl._create_unverified_context(...)
+      - patterns:
+          - pattern-either:
+              - pattern: $CTX.check_hostname = False
+              - pattern: $CTX.verify_mode = ssl.CERT_NONE
+          - pattern-inside: |
+              import ssl
+              ...

@@ -1,6 +1,8 @@
 ---
-name: security
+name: py-security
 description: Security Agent - Identify OWASP Top 10 vulnerabilities and security issues in Python projects
+version: 1
+last_updated: 2026-04-29
 ---
 
 # Security Agent - Vulnerability Assessment Mode
