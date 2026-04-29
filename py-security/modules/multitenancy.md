@@ -1,3 +1,14 @@
+---
+name: Multi-Tenancy Security Patterns
+description: Tenant isolation models, RLS, tenant context propagation to async/jobs, cross-tenant leak vectors
+applies_to:
+  - feature: multi-tenancy
+  - dependency: django-tenants
+  - dependency: sqlalchemy-multi-tenant
+version: 1
+last_updated: 2026-04-29
+---
+
 # Multi-Tenancy Security Patterns
 
 Optional module for the `/security` skill. Apply when the project serves multiple tenants from a shared infrastructure (shared DB, schema-per-tenant, or DB-per-tenant).

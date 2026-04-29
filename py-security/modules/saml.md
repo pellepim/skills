@@ -1,3 +1,15 @@
+---
+name: SAML Security Patterns
+description: SP and IdP signature validation, replay, audience, metadata, and key-isolation checks
+applies_to:
+  - feature: saml
+  - dependency: python3-saml
+  - dependency: python-saml
+  - dependency: pysaml2
+version: 1
+last_updated: 2026-04-29
+---
+
 # SAML Security Patterns
 
 Optional module for the `/security` skill. Apply when the project implements SAML SP or IdP functionality.

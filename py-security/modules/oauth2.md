@@ -1,3 +1,18 @@
+---
+name: OAuth2 Security Patterns
+description: PKCE, redirect URI validation, token storage, refresh rotation, scope, and JWT handling
+applies_to:
+  - feature: oauth2
+  - feature: oidc
+  - dependency: authlib
+  - dependency: oauthlib
+  - dependency: requests-oauthlib
+  - dependency: django-oauth-toolkit
+  - dependency: fastapi-users
+version: 1
+last_updated: 2026-04-29
+---
+
 # OAuth2 Security Patterns
 
 Optional module for the `/security` skill. Apply when the project implements OAuth2 as a client (consuming tokens from external providers) or as a server (issuing tokens).

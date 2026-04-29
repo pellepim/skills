@@ -28,21 +28,39 @@ Identify OWASP Top 10 vulnerabilities and security misconfigurations in Python w
 | Unbounded Input | - | Missing length limits on string fields, unbounded JSON bodies |
 | Policy Consistency | - | Settings/UI promise X but code does not enforce X |
 
-## Optional Modules
+## Optional Modules (Dynamic Discovery)
 
-Check for these files alongside SKILL.md for domain-specific checklists:
+Modules live in `modules/*.md`. Each declares triggers in YAML frontmatter:
 
-- `modules/saml.md` — SAML SP and IdP security patterns
-- `modules/webauthn.md` — WebAuthn/Passkey ceremony security patterns
-- `modules/oauth2.md` — OAuth2 client and server patterns (PKCE, token storage, scope escalation)
-- `modules/file-upload.md` — File upload handling (path traversal, MIME validation, image processing)
-- `modules/graphql.md` — GraphQL API patterns (depth limits, batching, N+1 auth)
-- `modules/websocket.md` — WebSocket security (origin validation, per-message auth, rate limiting)
-- `modules/task-queues.md` — Background job security (serialization, privilege boundaries, broker security)
-- `modules/multitenancy.md` — Multi-tenant isolation (RLS, context propagation, cross-tenant leaks)
-- `modules/email.md` — Email security (header injection, link tokens, SPF/DKIM, rate limiting)
+```yaml
+---
+name: <module name>
+description: <one-liner>
+applies_to:
+  - feature: <name>      # explicit feature name
+  - framework: <name>    # django, fastapi, flask, drf
+  - dependency: <pypi>   # detect via requirements.txt / pyproject.toml / poetry.lock
+  - any                  # always-on
+version: <int>
+last_updated: <YYYY-MM-DD>
+---
+```
 
-If a module file exists, read and apply it during scanning.
+**Discovery procedure (run at scan start):**
+
+1. List `modules/*.md` (skip files starting with `_`, e.g. `_template.md`, `_index.md`).
+2. Parse each module's frontmatter `applies_to`.
+3. For each trigger:
+   - `feature:` — match against user-stated scope, or grep evidence (e.g. `saml` ↔ `samlp:`, `oauth2` ↔ `/authorize`, `webauthn` ↔ `navigator.credentials`).
+   - `framework:` — match imports / settings (`from django` → django, `from fastapi` → fastapi, etc.).
+   - `dependency:` — match against `requirements.txt`, `pyproject.toml`, `poetry.lock`, `Pipfile.lock`, `uv.lock`.
+   - `any` — always load.
+4. Read every matched module and apply its checklists during the scan.
+5. Record in the report which modules were loaded and which were skipped (with reason).
+
+`modules/_index.md` is a human-readable summary of available modules. `modules/_template.md` is the contract for new modules.
+
+**Adding a module:** copy `_template.md`, fill frontmatter, write Red Flags + Checklists. No edit to `SKILL.md` needed.
 
 ## Workflow
 
@@ -413,7 +431,7 @@ When invoked programmatically (via Agent tool), skip all interactive workflows:
 
 Instead:
 1. Read each changed file listed in your prompt
-2. If module files exist (`modules/saml.md`, `modules/webauthn.md`), read and apply relevant ones
+2. Run module discovery (see "Optional Modules" above): list `modules/*.md`, parse frontmatter, match `applies_to` against the changed files / dependency manifests, load matches
 3. Scan for all OWASP categories relevant to the changes
 4. Report findings only
 

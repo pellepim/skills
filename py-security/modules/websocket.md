@@ -1,3 +1,16 @@
+---
+name: WebSocket Security Patterns
+description: Auth on upgrade, origin validation, message size, per-message authz, tenant isolation
+applies_to:
+  - feature: websocket
+  - dependency: channels
+  - dependency: websockets
+  - dependency: python-socketio
+  - dependency: starlette
+version: 1
+last_updated: 2026-04-29
+---
+
 # WebSocket Security Patterns
 
 Optional module for the `/security` skill. Apply when the project uses WebSocket connections (Django Channels, FastAPI WebSocket, Socket.IO, raw websockets).

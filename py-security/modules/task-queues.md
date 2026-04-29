@@ -1,3 +1,18 @@
+---
+name: Task Queue / Background Job Security Patterns
+description: Serializer choice, argument validation, privilege boundaries, broker security, scheduled-task hygiene
+applies_to:
+  - feature: task-queue
+  - dependency: celery
+  - dependency: rq
+  - dependency: dramatiq
+  - dependency: huey
+  - dependency: arq
+  - dependency: django-q
+version: 1
+last_updated: 2026-04-29
+---
+
 # Task Queue / Background Job Security Patterns
 
 Optional module for the `/security` skill. Apply when the project uses background task processing (Celery, RQ, Dramatiq, Huey, Arq, or custom queue workers).

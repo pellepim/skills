@@ -1,3 +1,17 @@
+---
+name: File Upload Security Patterns
+description: Path traversal, MIME validation, size limits, image processing exploits, and safe serving
+applies_to:
+  - feature: file-upload
+  - dependency: python-multipart
+  - dependency: pillow
+  - dependency: python-magic
+  - dependency: filetype
+  - dependency: cairosvg
+version: 1
+last_updated: 2026-04-29
+---
+
 # File Upload Security Patterns
 
 Optional module for the `/security` skill. Apply when the project accepts file uploads from users.

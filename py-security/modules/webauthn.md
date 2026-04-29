@@ -1,3 +1,16 @@
+---
+name: WebAuthn / Passkey Security Patterns
+description: User verification, RP ID derivation, challenge binding, replay, sign-count, and ceremony payload caps
+applies_to:
+  - feature: webauthn
+  - feature: passkey
+  - dependency: webauthn
+  - dependency: fido2
+  - dependency: py_webauthn
+version: 1
+last_updated: 2026-04-29
+---
+
 # WebAuthn / Passkey Security Patterns
 
 Optional module for the `/security` skill. Apply when the project implements WebAuthn/Passkey authentication.

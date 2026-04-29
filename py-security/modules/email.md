@@ -1,3 +1,19 @@
+---
+name: Email Security Patterns
+description: Header injection, template/SSRF, link tokens, SPF/DKIM/DMARC, rate limiting, and inbound email handling
+applies_to:
+  - feature: email
+  - feature: smtp
+  - dependency: aiosmtplib
+  - dependency: sendgrid
+  - dependency: mailgun
+  - dependency: postmark
+  - dependency: anymail
+  - dependency: django-anymail
+version: 1
+last_updated: 2026-04-29
+---
+
 # Email Security Patterns
 
 Optional module for the `/security` skill. Apply when the project sends outbound emails (transactional, notification, marketing) or processes inbound email.
