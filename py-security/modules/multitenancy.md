@@ -17,11 +17,11 @@ Optional module for the `/security` skill. Apply when the project serves multipl
 
 Identify which model the project uses, then apply the corresponding checks:
 
-| Model | Isolation | Risk Profile |
-|-------|-----------|-------------|
-| Shared DB + shared schema (row-level) | Lowest | Every query must filter by tenant_id |
-| Shared DB + schema-per-tenant | Medium | Schema search path must be set correctly |
-| Database-per-tenant | Highest | Connection routing must be correct |
+| Model                                 | Isolation | Risk Profile                              |
+|---------------------------------------|-----------|-------------------------------------------|
+| Shared DB + shared schema (row-level) | Lowest    | Every query must filter by tenant_id      |
+| Shared DB + schema-per-tenant         | Medium    | Schema search path must be set correctly  |
+| Database-per-tenant                   | Highest   | Connection routing must be correct        |
 
 ## 2. Row-Level Isolation (Shared Schema)
 

@@ -27,21 +27,21 @@ Flags:
 
 ## Useful rule IDs to know
 
-| ID | Pattern |
-|----|---------|
-| B102 | `exec` |
-| B201 | Flask `debug=True` |
-| B301 | `pickle.loads` |
-| B303 | MD5/SHA1 |
-| B306 | `mktemp` (predictable temp file) |
-| B307 | `eval` |
-| B311 | `random` for security |
-| B321 | FTP |
-| B324 | `hashlib.new` with weak algo |
-| B501 | `requests` with `verify=False` |
-| B506 | `yaml.load` without SafeLoader |
-| B602 | `subprocess` with `shell=True` |
-| B608 | hardcoded SQL string with format/concat |
+| ID   | Pattern                                    |
+|------|--------------------------------------------|
+| B102 | `exec`                                     |
+| B201 | Flask `debug=True`                         |
+| B301 | `pickle.loads`                             |
+| B303 | MD5/SHA1                                   |
+| B306 | `mktemp` (predictable temp file)           |
+| B307 | `eval`                                     |
+| B311 | `random` for security                      |
+| B321 | FTP                                        |
+| B324 | `hashlib.new` with weak algo               |
+| B501 | `requests` with `verify=False`             |
+| B506 | `yaml.load` without SafeLoader             |
+| B602 | `subprocess` with `shell=True`             |
+| B608 | hardcoded SQL string with format/concat    |
 
 ## Suppression
 

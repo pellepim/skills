@@ -15,22 +15,22 @@ Identify OWASP Top 10 vulnerabilities and security misconfigurations in Python w
 
 ## OWASP Categories
 
-| Category | Code | Focus Area |
-|----------|------|------------|
-| Broken Access Control | A01 | Ownership checks, IDOR, privilege escalation, CSRF |
-| Cryptographic Failures | A02 | Password hashing, token generation, JWT, TLS verification, timing attacks, weak ciphers, data exposure |
-| Injection | A03 | SQL, XSS, command injection, SSTI, XXE, path traversal, log injection |
-| Insecure Design | A04 | Mass assignment, business-logic flaws, missing rate limits on sensitive flows |
-| Security Misconfiguration | A05 | CORS, cookies, headers, debug mode, trusted-proxy boundaries |
-| Vulnerable Components | A06 | Dependency scanning (`pip-audit`, `safety`, `osv-scanner`) |
-| Auth Failures | A07 | Password handling, session management, MFA, webhook signature verification |
-| Data Integrity | A08 | Deserialization, YAML/pickle, eval, decompression bombs |
-| Logging Failures | A09 | Auth events, log injection |
-| SSRF | A10 | URL fetching with user input, metadata endpoint, DNS rebinding |
-| Unbounded Input | - | Missing length limits on string fields, unbounded JSON bodies |
-| Resource Exhaustion | - | ReDoS, decompression bombs, unbounded recursion |
-| Race / TOCTOU | - | Async shared state, idempotency, file create-then-check |
-| Policy Consistency | - | Settings/UI promise X but code does not enforce X |
+| Category                  | Code | Focus Area                                                                                            |
+|---------------------------|------|-------------------------------------------------------------------------------------------------------|
+| Broken Access Control     | A01  | Ownership checks, IDOR, privilege escalation, CSRF                                                    |
+| Cryptographic Failures    | A02  | Password hashing, token generation, JWT, TLS verification, timing attacks, weak ciphers, data exposure |
+| Injection                 | A03  | SQL, XSS, command injection, SSTI, XXE, path traversal, log injection                                 |
+| Insecure Design           | A04  | Mass assignment, business-logic flaws, missing rate limits on sensitive flows                         |
+| Security Misconfiguration | A05  | CORS, cookies, headers, debug mode, trusted-proxy boundaries                                          |
+| Vulnerable Components     | A06  | Dependency scanning (`pip-audit`, `safety`, `osv-scanner`)                                            |
+| Auth Failures             | A07  | Password handling, session management, MFA, webhook signature verification                            |
+| Data Integrity            | A08  | Deserialization, YAML/pickle, eval, decompression bombs                                               |
+| Logging Failures          | A09  | Auth events, log injection                                                                            |
+| SSRF                      | A10  | URL fetching with user input, metadata endpoint, DNS rebinding                                        |
+| Unbounded Input           | -    | Missing length limits on string fields, unbounded JSON bodies                                         |
+| Resource Exhaustion       | -    | ReDoS, decompression bombs, unbounded recursion                                                       |
+| Race / TOCTOU             | -    | Async shared state, idempotency, file create-then-check                                               |
+| Policy Consistency        | -    | Settings/UI promise X but code does not enforce X                                                     |
 
 ## Optional Modules (Dynamic Discovery)
 
@@ -861,39 +861,39 @@ General floor:
 
 When the rubric below disagrees with intuition, use the higher severity. Authentication and authorization findings start at **High**.
 
-| Finding | Floor | Promotes to |
-|---------|-------|-------------|
-| `eval` / `exec` / `pickle.loads` on untrusted input | Critical | — |
-| Command injection (`shell=True` with user input) | Critical | — |
-| SSTI on a request-reachable path | Critical | — |
-| SQL injection on authenticated endpoint | High | Critical if pre-auth or admin role |
-| SSRF reaching cloud metadata or internal services | High | Critical if exfil already possible |
-| Path traversal write | High | Critical if writes to executable / cron path |
-| Path traversal read | Medium | High if reads secrets / tokens |
-| Auth bypass (missing `permission_classes`, missing `Depends`) | High | Critical if admin-equivalent |
-| IDOR on owned resource | High | Critical if cross-tenant |
-| JWT `alg=none` or algorithm confusion accepted | Critical | — |
-| TLS verification disabled (`verify=False`) on prod path | High | Critical if used for auth tokens |
-| Webhook signature verification missing | High | — |
-| Hardcoded production secret in repo | Critical | — |
-| Hardcoded test secret confused for prod | Medium | — |
-| `mark_safe` / `\| safe` / `innerHTML` with user input | Medium | High if reflects to other users |
-| CSRF missing on state-changing endpoint | Medium | High for money/account-mutating |
-| Mass assignment on a model with privilege fields | High | Critical if `is_admin`/`is_staff` settable |
-| Decompression bomb / ZIP slip on untrusted archives | High | — |
-| ReDoS reachable from user input | Medium | High if pre-auth |
-| Weak randomness for tokens / OTPs | High | — |
-| Timing attack on token comparison (`==`) | Medium | High if pre-auth & remotely measurable |
-| Missing rate limit on auth / email-trigger endpoint | Medium | High if free-tier abuse / cost amplification |
-| CORS `allow_origins=["*"]` with `allow_credentials=True` | High | — |
-| Forwarded-header trust without proxy allowlist | Medium | High if used for tenant routing or origin check |
-| Missing security headers (HSTS, CSP, X-Frame-Options) | Low | Medium if app handles credentials and lacks all of them |
-| Debug mode enabled in production | Critical | — |
-| Open redirect | Low | Medium if used in OAuth/SSO flow |
-| Logging of passwords / tokens | High | — |
-| Missing length cap on input field | Low | Medium for pre-auth, Critical for body without overall cap |
-| Insecure deserialization (`yaml.load`, `pickle`) | Critical | — |
-| XXE on untrusted XML | High | Critical if file:// readable / SSRF possible |
+| Finding                                                       | Floor    | Promotes to                                                |
+|---------------------------------------------------------------|----------|------------------------------------------------------------|
+| `eval` / `exec` / `pickle.loads` on untrusted input           | Critical | —                                                          |
+| Command injection (`shell=True` with user input)              | Critical | —                                                          |
+| SSTI on a request-reachable path                              | Critical | —                                                          |
+| SQL injection on authenticated endpoint                       | High     | Critical if pre-auth or admin role                         |
+| SSRF reaching cloud metadata or internal services             | High     | Critical if exfil already possible                         |
+| Path traversal write                                          | High     | Critical if writes to executable / cron path               |
+| Path traversal read                                           | Medium   | High if reads secrets / tokens                             |
+| Auth bypass (missing `permission_classes`, missing `Depends`) | High     | Critical if admin-equivalent                               |
+| IDOR on owned resource                                        | High     | Critical if cross-tenant                                   |
+| JWT `alg=none` or algorithm confusion accepted                | Critical | —                                                          |
+| TLS verification disabled (`verify=False`) on prod path       | High     | Critical if used for auth tokens                           |
+| Webhook signature verification missing                        | High     | —                                                          |
+| Hardcoded production secret in repo                           | Critical | —                                                          |
+| Hardcoded test secret confused for prod                       | Medium   | —                                                          |
+| `mark_safe` / `\| safe` / `innerHTML` with user input         | Medium   | High if reflects to other users                            |
+| CSRF missing on state-changing endpoint                       | Medium   | High for money/account-mutating                            |
+| Mass assignment on a model with privilege fields              | High     | Critical if `is_admin`/`is_staff` settable                 |
+| Decompression bomb / ZIP slip on untrusted archives           | High     | —                                                          |
+| ReDoS reachable from user input                               | Medium   | High if pre-auth                                           |
+| Weak randomness for tokens / OTPs                             | High     | —                                                          |
+| Timing attack on token comparison (`==`)                      | Medium   | High if pre-auth & remotely measurable                     |
+| Missing rate limit on auth / email-trigger endpoint           | Medium   | High if free-tier abuse / cost amplification               |
+| CORS `allow_origins=["*"]` with `allow_credentials=True`      | High     | —                                                          |
+| Forwarded-header trust without proxy allowlist                | Medium   | High if used for tenant routing or origin check            |
+| Missing security headers (HSTS, CSP, X-Frame-Options)         | Low      | Medium if app handles credentials and lacks all of them    |
+| Debug mode enabled in production                              | Critical | —                                                          |
+| Open redirect                                                 | Low      | Medium if used in OAuth/SSO flow                           |
+| Logging of passwords / tokens                                 | High     | —                                                          |
+| Missing length cap on input field                             | Low      | Medium for pre-auth, Critical for body without overall cap |
+| Insecure deserialization (`yaml.load`, `pickle`)              | Critical | —                                                          |
+| XXE on untrusted XML                                          | High     | Critical if file:// readable / SSRF possible               |
 
 ## Delegating to Subagents
 
