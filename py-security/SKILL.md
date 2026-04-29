@@ -68,6 +68,30 @@ last_updated: <YYYY-MM-DD>
 
 ## Workflow
 
+### 0. Static Analyzer Pre-Pass
+
+Before manual review, run the cheap automated checks. They catch the obvious cases and let manual review focus on what tools cannot see (auth logic, IDOR, policy consistency, business logic).
+
+See `tools/` for invocation details. Quick reference:
+
+```bash
+# Dependencies
+pip-audit                                            # known CVEs
+# Python lints
+ruff check --select=S --exclude=tests,migrations .   # bandit rules via ruff
+# Pattern-based
+semgrep --config=p/python --config=p/owasp-top-ten --baseline-ref=origin/main .
+# Secrets
+gitleaks detect --log-opts="origin/main..HEAD" -v
+```
+
+Triage tool output before reporting:
+- High-confidence findings (e.g. `verify=False`, `pickle.loads(request.body)`, `shell=True` with f-string) → include directly.
+- Medium-confidence (e.g. SQL string-formatting flags) → verify reachability with user input first.
+- Known false positives → suppress with rule ID + reason inline (`# nosec B602 -- argv list, no user input`).
+
+Tool output is a starting point, not the report.
+
 ### 1. Orientation
 
 Ask the user:
@@ -880,17 +904,37 @@ cursor.execute(query, (email,))
 When invoked programmatically (via Agent tool), skip all interactive workflows:
 - Do not ask about scope, focus, or context
 
-Instead:
-1. Read each changed file listed in your prompt
-2. Run module discovery (see "Optional Modules" above): list `modules/*.md`, parse frontmatter, match `applies_to` against the changed files / dependency manifests, load matches
-3. Scan for all OWASP categories relevant to the changes
-4. Report findings only
+### Mode A — Explicit file list
+
+If the prompt includes a list of files:
+1. Read each changed file
+2. Run module discovery (list `modules/*.md`, parse frontmatter, match `applies_to` against changed files / dependency manifests, load matches)
+3. Run the static-analyzer pre-pass scoped to the changed files (`semgrep --baseline-ref=origin/main` for diff-only, `ruff check --select=S` on the changed files)
+4. Scan for all OWASP categories relevant to the changes
+5. Report findings only
+
+### Mode B — Diff-only (no file list)
+
+If the prompt does not specify files:
+1. Run `git diff --name-only origin/main...HEAD` to enumerate changed files
+2. Skip files matching `tests/**`, `**/test_*.py`, `migrations/**`, `**/*.md` unless they are security-relevant configs (e.g. `.env.example`, `docker-compose.yml`, `Dockerfile`, `nginx.conf`)
+3. Continue from step 2 of Mode A
+
+If `git diff` returns nothing, fall back to listing files modified in the last commit (`git diff --name-only HEAD~1 HEAD`). If still empty, abort with "no changes to review."
+
+### Reporting
 
 Report back (for each finding):
 - File and line number
 - OWASP category and severity (Critical / High / Medium / Low)
 - Attack scenario (how it could be exploited)
 - Suggested remediation
+
+Also report **negatives with evidence**:
+- Categories checked
+- Categories triggered
+- Categories clean (with `file:line` citations of the safe pattern, not just "looks fine")
+- Modules loaded vs skipped (with reason for skip)
 
 If no issues found, say so explicitly. Do not edit any files.
 
