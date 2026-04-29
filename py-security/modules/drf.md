@@ -61,7 +61,9 @@ class UserViewSet(ModelViewSet):
 - [ ] Every view either inherits from a default-protected base OR declares `permission_classes`
 - [ ] `AllowAny` overrides documented per occurrence (comment with reason)
 - [ ] `ModelViewSet` actions audited individually — `list` and `create` have different threat profiles
-- [ ] Object-level permissions (`has_object_permission`) implemented for ownership checks; do not rely on `get_queryset` filtering alone (returns 404 for non-owners, but does not block direct PUT/PATCH/DELETE if the queryset is bypassed)
+- [ ] Object-level permissions (`has_object_permission`) implemented for ownership checks; do not rely on `get_queryset`
+      filtering alone (returns 404 for non-owners, but does not block direct PUT/PATCH/DELETE if the queryset is
+      bypassed)
 - [ ] `IsAuthenticatedOrReadOnly` reviewed — anonymous GET may leak data not meant to be public
 
 ## 3. Serializer Field Whitelisting
@@ -90,7 +92,8 @@ class UserSerializer(ModelSerializer):
 - [ ] No `fields = "__all__"` on write-capable serializers
 - [ ] `exclude = [...]` patterns audited — easy to forget to add new sensitive fields here
 - [ ] Read-only fields explicitly listed (`read_only_fields`)
-- [ ] Sensitive fields (`is_staff`, `is_superuser`, `password`, `tenant_id`) never in `fields` for client-facing serializers
+- [ ] Sensitive fields (`is_staff`, `is_superuser`, `password`, `tenant_id`) never in `fields` for client-facing
+      serializers
 - [ ] Separate input and output serializers when their shapes diverge
 
 ## 4. Object-Level Permissions / IDOR
@@ -115,7 +118,8 @@ class DocumentViewSet(ModelViewSet):
 
 **Checklist:**
 - [ ] `get_queryset` filters by request user / tenant for owned-resource viewsets
-- [ ] `permission_classes` includes an object-level permission (`IsOwner`, `IsTenantMember`) that implements `has_object_permission`
+- [ ] `permission_classes` includes an object-level permission (`IsOwner`, `IsTenantMember`) that implements
+      `has_object_permission`
 - [ ] DRF's `get_object()` calls `check_object_permissions` (default behavior); custom `retrieve` overrides re-call it
 - [ ] Nested router lookups (`/users/<id>/documents/`) verify the parent ownership, not just the child
 
@@ -132,7 +136,8 @@ class LoginView(APIView):
 **Checklist:**
 - [ ] `DEFAULT_THROTTLE_CLASSES` set with anon and user rates
 - [ ] Login / register / password-reset endpoints have a stricter `throttle_classes` (per-IP and per-username)
-- [ ] Throttle scope per endpoint configured (`throttle_scope = "login"`) so one endpoint's burst doesn't exhaust another's budget
+- [ ] Throttle scope per endpoint configured (`throttle_scope = "login"`) so one endpoint's burst doesn't exhaust
+      another's budget
 - [ ] Throttle backed by a shared cache (Redis) in multi-instance deployments — local-memory throttle is per-process
 
 ## 6. Browsable API in Production
@@ -151,8 +156,10 @@ class LoginView(APIView):
 ## 8. Authentication Token Storage
 
 **Checklist:**
-- [ ] DRF `TokenAuthentication` tokens hashed in DB (not stored plaintext) — DRF default stores plaintext; consider `dj-rest-auth` or custom
-- [ ] JWT auth (if using `djangorestframework-simplejwt`): rotation enabled, blacklist app installed for revocation, short access-token TTL
+- [ ] DRF `TokenAuthentication` tokens hashed in DB (not stored plaintext) — DRF default stores plaintext; consider
+      `dj-rest-auth` or custom
+- [ ] JWT auth (if using `djangorestframework-simplejwt`): rotation enabled, blacklist app installed for revocation,
+      short access-token TTL
 - [ ] Session auth and token auth not both enabled on the same view unless intentional (CSRF surface)
 
 ## References

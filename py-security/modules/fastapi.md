@@ -1,6 +1,6 @@
 ---
 name: FastAPI Security Patterns
-description: Dependency-injection auth ordering, OpenAPI exposure, response_model leaks, BackgroundTasks privilege, CORS placement
+description: DI auth ordering, OpenAPI exposure, response_model leaks, BackgroundTasks, CORS placement
 applies_to:
   - framework: fastapi
   - dependency: fastapi
@@ -31,10 +31,13 @@ app.include_router(admin_router, dependencies=[Depends(get_current_user)])
 ```
 
 **Checklist:**
-- [ ] Every protected endpoint either declares `Depends(get_current_user)` directly or is included under a router with `dependencies=[...]`
+- [ ] Every protected endpoint either declares `Depends(get_current_user)` directly or is included under a router with
+      `dependencies=[...]`
 - [ ] Router-level `dependencies` not overridden by a sub-router that omits them
-- [ ] `Security(...)` (or `Depends(...)` for non-OAuth) used consistently; do not mix manual header parsing with the framework's auth
-- [ ] Admin / role-restricted endpoints use a separate dependency (`Depends(require_admin)`) layered on top, not an `if user.is_admin` inside the handler (easy to forget)
+- [ ] `Security(...)` (or `Depends(...)` for non-OAuth) used consistently; do not mix manual header parsing with the
+      framework's auth
+- [ ] Admin / role-restricted endpoints use a separate dependency (`Depends(require_admin)`) layered on top, not an `if
+      user.is_admin` inside the handler (easy to forget)
 - [ ] `dependency_overrides` only used in tests, never in production code paths
 
 ## 2. OpenAPI / Docs Exposure
@@ -55,7 +58,8 @@ app = FastAPI(
 **Checklist:**
 - [ ] `/docs`, `/redoc`, `/openapi.json` disabled or auth-gated in production
 - [ ] Internal-only routes use `include_in_schema=False`
-- [ ] Error responses do not include the full schema name on validation failure (FastAPI default leaks internal model names — acceptable, but be aware)
+- [ ] Error responses do not include the full schema name on validation failure (FastAPI default leaks internal model
+      names — acceptable, but be aware)
 
 ## 3. response_model — Information Leakage
 
@@ -82,7 +86,8 @@ def get_user(id: int):
 - [ ] Endpoints declare `response_model=` (Pydantic v2: also valid as return type annotation)
 - [ ] Output models distinct from input/ORM models (no shared `User` for `request body` and `response`)
 - [ ] Sensitive fields (`hashed_password`, `password_reset_token`, `mfa_secret`, `internal_*`) explicitly excluded
-- [ ] `response_model_exclude_none=True` considered for partial-update responses (avoids leaking absent fields with `null`)
+- [ ] `response_model_exclude_none=True` considered for partial-update responses (avoids leaking absent fields with
+      `null`)
 
 ## 4. Background Tasks & Privilege
 
@@ -124,7 +129,8 @@ app.add_middleware(
 **Checklist:**
 - [ ] `allow_origins` is an explicit list of `https://...` origins; never `["*"]` with `allow_credentials=True`
 - [ ] `allow_origin_regex` audited; no `.*` patterns
-- [ ] CORS middleware position: added before auth middleware so preflights succeed; but ensure preflight handler is not a CSRF bypass for cookie-authed endpoints
+- [ ] CORS middleware position: added before auth middleware so preflights succeed; but ensure preflight handler is not
+      a CSRF bypass for cookie-authed endpoints
 - [ ] `allow_methods` and `allow_headers` not blanket `["*"]` for credentialed endpoints
 - [ ] `expose_headers` minimal (avoid leaking internal headers like `X-Request-Id` to other origins if not needed)
 
@@ -163,7 +169,8 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 **Checklist:**
 - [ ] No shared mutable Python state across `await` points (see SKILL.md "Race / TOCTOU")
 - [ ] All outbound HTTP / DB calls have explicit timeouts
-- [ ] Blocking I/O (CPU-bound work, sync DB drivers) wrapped in `run_in_threadpool` or pushed to a worker — long blocking handlers DoS the event loop
+- [ ] Blocking I/O (CPU-bound work, sync DB drivers) wrapped in `run_in_threadpool` or pushed to a worker — long
+      blocking handlers DoS the event loop
 
 ## References
 

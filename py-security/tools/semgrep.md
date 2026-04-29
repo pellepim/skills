@@ -41,7 +41,8 @@ Reports only findings introduced relative to `main`. Pair with the headless mode
 
 ## Custom rules
 
-Drop YAML rule files in `tools/semgrep-rules/` (project-specific patterns: forbidden API usage, internal-secret prefixes, banned imports). Run with `--config=tools/semgrep-rules/`.
+Drop YAML rule files in `tools/semgrep-rules/` (project-specific patterns: forbidden API usage, internal-secret
+prefixes, banned imports). Run with `--config=tools/semgrep-rules/`.
 
 ## Suppression
 

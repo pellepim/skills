@@ -27,10 +27,12 @@ authenticator_selection=AuthenticatorSelectionCriteria(
 verify_authentication_response(..., require_user_verification=False)
 ```
 
-A passkey without UV is "something you have" only. If the auth policy treats a passkey as satisfying MFA (phishing-resistant), UV must be **REQUIRED** at registration AND at verification.
+A passkey without UV is "something you have" only. If the auth policy treats a passkey as satisfying MFA
+(phishing-resistant), UV must be **REQUIRED** at registration AND at verification.
 
 **Checklist:**
-- [ ] `generate_registration_options` sets `user_verification=REQUIRED` (or the stored credential carries a `uv=True` flag checked before granting policy credit)
+- [ ] `generate_registration_options` sets `user_verification=REQUIRED` (or the stored credential carries a `uv=True`
+      flag checked before granting policy credit)
 - [ ] `generate_authentication_options` sets `user_verification=REQUIRED`
 - [ ] `verify_authentication_response` called with `require_user_verification=True`
 - [ ] Policy code that grants "strong auth" credit reads the enforcement flag, not just credential existence
@@ -60,7 +62,8 @@ rp_id = normalize_host(host)
 
 ## 4. Credential Identity Binding
 
-**Red Flag:** Matching the returned assertion against any credential in the DB rather than credentials the bound user owns.
+**Red Flag:** Matching the returned assertion against any credential in the DB rather than credentials the bound user
+owns.
 
 **Checklist:**
 - [ ] `allowCredentials` at begin time scoped to the pending user, not open ("discoverable") unless deliberate
@@ -87,7 +90,8 @@ class CompleteAuthenticationRequest(BaseModel):
 **Checklist:**
 - [ ] Reverse proxy or middleware caps request body size (128 KiB for auth endpoints)
 - [ ] Ceremony schemas use typed sub-models with per-field `max_length`, not bare `dict`
-- [ ] `rawId`, `clientDataJSON`, `attestationObject`, `authenticatorData`, `signature`, `userHandle` each have explicit length caps
+- [ ] `rawId`, `clientDataJSON`, `attestationObject`, `authenticatorData`, `signature`, `userHandle` each have explicit
+      length caps
 
 ## 7. Admin Revocation
 

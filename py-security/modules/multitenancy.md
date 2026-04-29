@@ -11,7 +11,8 @@ last_updated: 2026-04-29
 
 # Multi-Tenancy Security Patterns
 
-Optional module for the `/security` skill. Apply when the project serves multiple tenants from a shared infrastructure (shared DB, schema-per-tenant, or DB-per-tenant).
+Optional module for the `/security` skill. Apply when the project serves multiple tenants from a shared infrastructure
+(shared DB, schema-per-tenant, or DB-per-tenant).
 
 ## 1. Tenant Isolation Model
 

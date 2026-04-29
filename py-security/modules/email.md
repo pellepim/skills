@@ -16,7 +16,8 @@ last_updated: 2026-04-29
 
 # Email Security Patterns
 
-Optional module for the `/security` skill. Apply when the project sends outbound emails (transactional, notification, marketing) or processes inbound email.
+Optional module for the `/security` skill. Apply when the project sends outbound emails (transactional, notification,
+marketing) or processes inbound email.
 
 ## 1. Header Injection
 
@@ -80,7 +81,8 @@ html = f'<img src="{user_provided_url}">'  # SSRF when email renderer fetches im
 
 ## 4. SPF / DKIM / DMARC Configuration
 
-Not code-level, but the security agent should flag if the application sends email from domains without proper authentication:
+Not code-level, but the security agent should flag if the application sends email from domains without proper
+authentication:
 
 **Checklist:**
 - [ ] `From` domain has SPF record (or application uses an authenticated relay that does)

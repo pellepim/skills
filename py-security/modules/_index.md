@@ -1,6 +1,7 @@
 # Module Index
 
-Auto-discovery is by frontmatter in each `modules/*.md` file. This file is a human-readable summary; the orchestrator reads frontmatter directly.
+Auto-discovery is by frontmatter in each `modules/*.md` file. This file is a human-readable summary; the orchestrator
+reads frontmatter directly.
 
 ### Feature / topic modules
 
@@ -8,9 +9,9 @@ Auto-discovery is by frontmatter in each `modules/*.md` file. This file is a hum
 |-------------------|-------------------------------------------------------------|--------------------------------------------------------------------------------------|
 | `email.md`        | feature:email, smtp libs (sendgrid, mailgun, anymail, etc.) | Header injection, link tokens, SPF/DKIM/DMARC, rate limits, inbound mail             |
 | `file-upload.md`  | feature:file-upload, pillow, python-magic, cairosvg         | Path traversal, MIME validation, size caps, image processing exploits, safe serving  |
-| `graphql.md`      | feature:graphql, strawberry, ariadne, graphene, graphql-core | Depth/complexity, introspection, batching, N+1 auth, subscriptions                  |
+| `graphql.md`      | feature:graphql, strawberry, ariadne, graphene, graphql-core| Depth/complexity, introspection, batching, N+1 auth, subscriptions                   |
 | `multitenancy.md` | feature:multi-tenancy, django-tenants                       | Tenant isolation, RLS, context propagation to async/jobs, leak vectors               |
-| `oauth2.md`       | feature:oauth2/oidc, authlib, oauthlib, django-oauth-toolkit | PKCE, redirect URI, token storage, refresh rotation, scope, JWT                     |
+| `oauth2.md`       | feature:oauth2/oidc, authlib, oauthlib, django-oauth-toolkit| PKCE, redirect URI, token storage, refresh rotation, scope, JWT                      |
 | `saml.md`         | feature:saml, python3-saml, pysaml2                         | XSW, replay, audience, metadata SSRF, IdP key isolation                              |
 | `secrets.md`      | always-on                                                   | Committed secrets, .env discipline, rotation, secret-manager usage                   |
 | `task-queues.md`  | feature:task-queue, celery, rq, dramatiq, huey, arq         | Serializer (no pickle), arg validation, privilege boundaries, broker, schedules      |

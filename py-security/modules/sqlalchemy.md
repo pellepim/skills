@@ -74,9 +74,12 @@ session.execute(update(User).where(User.id == uid).values(role=new_role))
 ```
 
 **Checklist:**
-- [ ] `bulk_insert_mappings`, `bulk_update_mappings`, `bulk_save_objects` not used on user input without re-validating fields explicitly
-- [ ] Core `update()` / `delete()` statements on user-controlled values document that ORM events are skipped, and validation happens at the API layer instead
-- [ ] Mass-update endpoints check authorization per row (or via WHERE clause that includes ownership), not just on the request
+- [ ] `bulk_insert_mappings`, `bulk_update_mappings`, `bulk_save_objects` not used on user input without re-validating
+      fields explicitly
+- [ ] Core `update()` / `delete()` statements on user-controlled values document that ORM events are skipped, and
+      validation happens at the API layer instead
+- [ ] Mass-update endpoints check authorization per row (or via WHERE clause that includes ownership), not just on the
+      request
 
 ## 4. Autoflush During Auth Checks
 

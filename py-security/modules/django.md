@@ -10,7 +10,8 @@ last_updated: 2026-04-29
 
 # Django Security Patterns
 
-Apply when the project uses Django (any version). For Django REST Framework, also load `drf.md`. For multi-tenant Django, also load `multitenancy.md`.
+Apply when the project uses Django (any version). For Django REST Framework, also load `drf.md`. For multi-tenant
+Django, also load `multitenancy.md`.
 
 ## 1. Settings Hygiene
 
@@ -102,7 +103,8 @@ def transfer_funds(request): ...
 **Checklist:**
 - [ ] Custom `AUTH_PASSWORD_VALIDATORS` configured (Django defaults are minimal)
 - [ ] Default `PBKDF2PasswordHasher` retained or upgraded to `Argon2PasswordHasher` (install `argon2-cffi`)
-- [ ] `login()` called after authentication regenerates the session key (Django does this; verify custom auth backends preserve it)
+- [ ] `login()` called after authentication regenerates the session key (Django does this; verify custom auth backends
+      preserve it)
 - [ ] Password reset uses the built-in `PasswordResetView` (single-use tokens) or equivalent; not hand-rolled
 - [ ] `SESSION_EXPIRE_AT_BROWSER_CLOSE = True` for sensitive applications
 - [ ] `SESSION_COOKIE_AGE` and absolute session timeout enforced (Django defaults: rolling 2 weeks)
@@ -126,7 +128,8 @@ return format_html("<p>{}</p>", user_bio)
 - [ ] Grep for `mark_safe(`, `| safe`, `{% autoescape off %}` — each occurrence justified
 - [ ] `format_html` used instead of `mark_safe(f"...")`
 - [ ] Custom template tags returning HTML use `format_html`, not string concat
-- [ ] No user input rendered inside `<script>` or `<style>` tags (XSS via template even with autoescape; use `json_script`)
+- [ ] No user input rendered inside `<script>` or `<style>` tags (XSS via template even with autoescape; use
+      `json_script`)
 
 ## 6. Admin Exposure
 
@@ -149,7 +152,8 @@ See `file-upload.md`. Django-specific:
 
 Order matters. Common mistakes:
 - `SecurityMiddleware` listed after middleware that returns early (HSTS / SSL redirect skipped)
-- `CsrfViewMiddleware` after `AuthenticationMiddleware` is fine; but custom auth that bypasses CSRF must run *after* CSRF
+- `CsrfViewMiddleware` after `AuthenticationMiddleware` is fine; but custom auth that bypasses CSRF must run *after*
+  CSRF
 - `XFrameOptionsMiddleware` missing entirely
 
 **Checklist:**

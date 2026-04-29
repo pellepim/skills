@@ -49,4 +49,5 @@ Per-line: `# nosec B602 — argv list is hardcoded, no user input`. Always inclu
 
 ## Exit codes
 
-`bandit` exits non-zero on findings. Wire into CI as a warn (not block) initially; promote to block after baseline triage.
+`bandit` exits non-zero on findings. Wire into CI as a warn (not block) initially; promote to block after baseline
+triage.

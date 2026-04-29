@@ -15,7 +15,8 @@ last_updated: 2026-04-29
 
 # OAuth2 Security Patterns
 
-Optional module for the `/security` skill. Apply when the project implements OAuth2 as a client (consuming tokens from external providers) or as a server (issuing tokens).
+Optional module for the `/security` skill. Apply when the project implements OAuth2 as a client (consuming tokens from
+external providers) or as a server (issuing tokens).
 
 ## 1. Authorization Code Flow
 

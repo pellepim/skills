@@ -55,14 +55,16 @@ last_updated: <YYYY-MM-DD>
 1. List `modules/*.md` (skip files starting with `_`, e.g. `_template.md`, `_index.md`).
 2. Parse each module's frontmatter `applies_to`.
 3. For each trigger:
-   - `feature:` — match against user-stated scope, or grep evidence (e.g. `saml` ↔ `samlp:`, `oauth2` ↔ `/authorize`, `webauthn` ↔ `navigator.credentials`).
+   - `feature:` — match against user-stated scope, or grep evidence (e.g. `saml` ↔ `samlp:`, `oauth2` ↔ `/authorize`,
+     `webauthn` ↔ `navigator.credentials`).
    - `framework:` — match imports / settings (`from django` → django, `from fastapi` → fastapi, etc.).
    - `dependency:` — match against `requirements.txt`, `pyproject.toml`, `poetry.lock`, `Pipfile.lock`, `uv.lock`.
    - `any` — always load.
 4. Read every matched module and apply its checklists during the scan.
 5. Record in the report which modules were loaded and which were skipped (with reason).
 
-`modules/_index.md` is a human-readable summary of available modules. `modules/_template.md` is the contract for new modules.
+`modules/_index.md` is a human-readable summary of available modules. `modules/_template.md` is the contract for new
+modules.
 
 **Adding a module:** copy `_template.md`, fill frontmatter, write Red Flags + Checklists. No edit to `SKILL.md` needed.
 
@@ -70,7 +72,8 @@ last_updated: <YYYY-MM-DD>
 
 ### 0. Static Analyzer Pre-Pass
 
-Before manual review, run the cheap automated checks. They catch the obvious cases and let manual review focus on what tools cannot see (auth logic, IDOR, policy consistency, business logic).
+Before manual review, run the cheap automated checks. They catch the obvious cases and let manual review focus on what
+tools cannot see (auth logic, IDOR, policy consistency, business logic).
 
 See `tools/` for invocation details. Quick reference:
 
@@ -86,7 +89,8 @@ gitleaks detect --log-opts="origin/main..HEAD" -v
 ```
 
 Triage tool output before reporting:
-- High-confidence findings (e.g. `verify=False`, `pickle.loads(request.body)`, `shell=True` with f-string) → include directly.
+- High-confidence findings (e.g. `verify=False`, `pickle.loads(request.body)`, `shell=True` with f-string) → include
+  directly.
 - Medium-confidence (e.g. SQL string-formatting flags) → verify reachability with user input first.
 - Known false positives → suppress with rule ID + reason inline (`# nosec B602 -- argv list, no user input`).
 
@@ -203,9 +207,11 @@ return render_template_string("<h1>Hello {{ name }}</h1>", name=name)
 ```
 
 **SSTI — Checklist:**
-- [ ] No user input passed as template *source* to `Template(...)`, `Environment.from_string(...)`, `render_template_string(...)`
+- [ ] No user input passed as template *source* to `Template(...)`, `Environment.from_string(...)`,
+      `render_template_string(...)`
 - [ ] User input only passed as *variables* into pre-authored templates
-- [ ] If user-authored templates are a feature (CMS, email templates), use `jinja2.SandboxedEnvironment` AND assume sandbox bypass exists; isolate the renderer
+- [ ] If user-authored templates are a feature (CMS, email templates), use `jinja2.SandboxedEnvironment` AND assume
+      sandbox bypass exists; isolate the renderer
 - [ ] Grep for `from_string`, `render_template_string`, `Template(` near request data
 
 **XXE / Unsafe XML — Red Flags:**
@@ -234,7 +240,8 @@ etree.fromstring(user_xml, parser)
 ```
 
 **XXE — Checklist:**
-- [ ] Replace `xml.etree`, `xml.sax`, `xml.dom`, `xmlrpc`, `lxml.etree.fromstring` on untrusted input with `defusedxml` equivalents
+- [ ] Replace `xml.etree`, `xml.sax`, `xml.dom`, `xmlrpc`, `lxml.etree.fromstring` on untrusted input with `defusedxml`
+      equivalents
 - [ ] `lxml` parsers explicitly set `resolve_entities=False`, `no_network=True`, `huge_tree=False`
 - [ ] SOAP/SAML/OOXML/SVG/RSS/Atom parsers reviewed (all are XML)
 - [ ] DOCTYPE declarations rejected on untrusted input (no DTD parsing)
@@ -260,7 +267,8 @@ return target.read_text()
 ```
 
 **Path Traversal — Checklist:**
-- [ ] Every `open(...)`, `Path(...)`, `send_file(...)`, `os.remove`, `shutil.copy/move`, `pathlib` op on user input goes through a base-directory boundary check
+- [ ] Every `open(...)`, `Path(...)`, `send_file(...)`, `os.remove`, `shutil.copy/move`, `pathlib` op on user input goes
+      through a base-directory boundary check
 - [ ] Use `Path.resolve()` + `is_relative_to(base.resolve())` (Python 3.9+) or equivalent prefix check on `realpath`
 - [ ] Reject filenames containing `..`, `/`, `\`, null bytes (`\x00`), and Windows drive prefixes (`C:`)
 - [ ] Prefer generated identifiers (UUID + extension) over user-supplied names
@@ -376,7 +384,8 @@ if hmac.compare_digest(token.encode(), expected.encode()): ...
 
 **Timing — Checklist:**
 - [ ] Secret/token/HMAC/signature comparison uses `hmac.compare_digest`, never `==`
-- [ ] Constant-time comparison for password verification (handled by bcrypt/argon2 verify functions; do not roll your own)
+- [ ] Constant-time comparison for password verification (handled by bcrypt/argon2 verify functions; do not roll your
+      own)
 
 **JWT — Red Flags:**
 ```python
@@ -552,7 +561,8 @@ grace_period_days: int = Query(default=7, ge=0, le=90)
 - [ ] Database TEXT columns have length constraints (`CHECK` or `VARCHAR(N)`)
 - [ ] URL fields limited to 2048 characters
 - [ ] Fields typed as bare `dict`, `list`, or `Any` have either typed sub-models or a body-size cap
-- [ ] JSON body endpoints have a request-body size ceiling (middleware or reverse proxy). Most Python frameworks do not cap body size by default.
+- [ ] JSON body endpoints have a request-body size ceiling (middleware or reverse proxy). Most Python frameworks do not
+      cap body size by default.
 - [ ] Pre-auth JSON endpoints (login, registration) have the tightest caps (~128 KiB)
 - [ ] Standard limits: names 255, descriptions 2000, URLs 2048, enum-like 50, passwords 255, emails 320
 
@@ -564,11 +574,14 @@ grace_period_days: int = Query(default=7, ge=0, le=90)
 host = request.headers.get("x-forwarded-host") or request.headers.get("host")
 ```
 
-`X-Forwarded-*` headers are proxy-controlled only when the app is strictly behind that proxy. If the app port is exposed (debug, internal network, misconfigured deploy), any caller can spoof these headers.
+`X-Forwarded-*` headers are proxy-controlled only when the app is strictly behind that proxy. If the app port is exposed
+(debug, internal network, misconfigured deploy), any caller can spoof these headers.
 
 **Checklist:**
-- [ ] Every `x-forwarded-host` / `x-forwarded-proto` / `x-forwarded-for` read is either (a) non-security (logging, cosmetic) OR (b) gated by a trusted-proxy allowlist
-- [ ] Security-relevant derivations (tenant routing, rate-limit keys, origin checks) prefer server-side sources over header derivation
+- [ ] Every `x-forwarded-host` / `x-forwarded-proto` / `x-forwarded-for` read is either (a) non-security (logging,
+      cosmetic) OR (b) gated by a trusted-proxy allowlist
+- [ ] Security-relevant derivations (tenant routing, rate-limit keys, origin checks) prefer server-side sources over
+      header derivation
 - [ ] Container/deploy config does NOT expose the app port directly; only the reverse proxy is externally reachable
 
 #### SSRF (A10)
@@ -605,22 +618,29 @@ def safe_fetch(url: str) -> bytes:
 ```
 
 **Attack Scenarios:**
-- Cloud metadata exfiltration: `http://169.254.169.254/latest/meta-data/iam/security-credentials/` (AWS), `http://metadata.google.internal/` (GCP), `http://169.254.169.254/metadata/instance?api-version=2021-02-01` (Azure, requires `Metadata: true` header — but webhook senders that forward headers may add it).
-- Internal service access: Redis (`http://internal-redis:6379/`), unauthenticated admin endpoints, internal Elasticsearch.
+- Cloud metadata exfiltration: `http://169.254.169.254/latest/meta-data/iam/security-credentials/` (AWS),
+  `http://metadata.google.internal/` (GCP), `http://169.254.169.254/metadata/instance?api-version=2021-02-01` (Azure,
+  requires `Metadata: true` header — but webhook senders that forward headers may add it).
+- Internal service access: Redis (`http://internal-redis:6379/`), unauthenticated admin endpoints, internal
+  Elasticsearch.
 - DNS rebinding: attacker-controlled domain resolves to public IP at validation time and 169.254.169.254 at fetch time.
 - Schemes beyond http: `file://`, `gopher://` (used to forge raw TCP), `dict://`, `ftp://`.
 
 **Checklist:**
 - [ ] Every `requests`, `httpx`, `aiohttp`, `urllib`, `urlopen` call on user-influenced URLs is wrapped in an SSRF guard
 - [ ] Scheme allowlist: `http`, `https` only (no `file`, `gopher`, `dict`, `ftp`)
-- [ ] Resolve hostname to IP and block private (RFC1918), loopback, link-local (`169.254/16`, including IPv6 `fe80::/10` and `fd00::/8`), multicast, reserved
+- [ ] Resolve hostname to IP and block private (RFC1918), loopback, link-local (`169.254/16`, including IPv6 `fe80::/10`
+      and `fd00::/8`), multicast, reserved
 - [ ] IP literal hosts (`http://10.0.0.1/`, decimal-encoded `http://2130706433/`) blocked
 - [ ] `allow_redirects=False` or redirect target re-validated (attacker can redirect to internal target)
 - [ ] Timeouts set on all outbound HTTP (5-10s typical)
-- [ ] For high-value flows (webhooks, image proxy, PDF rendering): outbound traffic via dedicated egress proxy with allowlist + IP re-validation per connection (defeats DNS rebinding)
-- [ ] Header allowlist on outbound requests (do NOT forward client `Authorization`, `Cookie`, `Metadata`, `X-aws-ec2-metadata-token`)
+- [ ] For high-value flows (webhooks, image proxy, PDF rendering): outbound traffic via dedicated egress proxy with
+      allowlist + IP re-validation per connection (defeats DNS rebinding)
+- [ ] Header allowlist on outbound requests (do NOT forward client `Authorization`, `Cookie`, `Metadata`,
+      `X-aws-ec2-metadata-token`)
 - [ ] Cloud metadata endpoints explicitly blocked even if private-IP check exists (defense in depth)
-- [ ] PDF/HTML/SVG/Markdown renderers that follow `<img>`, `<link>`, `<iframe>` either disable network fetch or route through SSRF guard
+- [ ] PDF/HTML/SVG/Markdown renderers that follow `<img>`, `<link>`, `<iframe>` either disable network fetch or route
+      through SSRF guard
 
 #### Webhook Signature Verification
 
@@ -693,7 +713,8 @@ for k in ALLOWED & request.json.keys():
 - [ ] DRF serializers list `fields = [...]` explicitly, never `__all__` for write paths
 - [ ] Django `ModelForm.Meta.fields` lists permitted fields explicitly
 - [ ] Pydantic input models distinct from ORM models; input model contains only client-settable fields
-- [ ] Sensitive fields (`is_admin`, `is_staff`, `tenant_id`, `user_id`, `role`, `balance`, `email_verified`) only set by server-side logic, never copied from request
+- [ ] Sensitive fields (`is_admin`, `is_staff`, `tenant_id`, `user_id`, `role`, `balance`, `email_verified`) only set by
+      server-side logic, never copied from request
 - [ ] Update endpoints use partial-update allowlists, not full-object replacement from request body
 
 #### ReDoS (Regex Denial of Service)
@@ -757,7 +778,8 @@ def safe_extract_zip(zf: zipfile.ZipFile, dest: Path, max_total: int):
 **Checklist:**
 - [ ] Decompression of user-supplied data is size-capped (streaming with running total)
 - [ ] Compression-ratio sanity check on inbound gzip/deflate (reject ratios > ~100:1 for unknown content)
-- [ ] `ZipFile.extractall` and `tarfile.extractall` never used directly on untrusted archives — manual loop with path-boundary check (zip slip / tar slip)
+- [ ] `ZipFile.extractall` and `tarfile.extractall` never used directly on untrusted archives — manual loop with
+      path-boundary check (zip slip / tar slip)
 - [ ] `tarfile` symlink/hardlink members rejected or resolved (CVE-2007-4559 family)
 - [ ] Pillow images: cap `Image.MAX_IMAGE_PIXELS`; call `verify()` before `load()`; check dimensions before decode
 - [ ] HTTP clients fetching untrusted URLs cap response size (stream + abort over limit)
@@ -794,12 +816,14 @@ def charge(req, idempotency_key: str = Header(...)):
 ```
 
 **Checklist:**
-- [ ] No filesystem `os.path.exists` / `stat` followed by `open` on a path that crosses a trust boundary; use `O_CREAT | O_EXCL` or atomic `rename`
+- [ ] No filesystem `os.path.exists` / `stat` followed by `open` on a path that crosses a trust boundary; use `O_CREAT |
+      O_EXCL` or atomic `rename`
 - [ ] Money-moving / account-mutating endpoints accept and dedupe on an `Idempotency-Key`
 - [ ] Async handlers do not share mutable Python state across `await` points without a lock (`asyncio.Lock`)
 - [ ] DB-level uniqueness or `SELECT ... FOR UPDATE` for "check uniqueness then insert" patterns (avoid app-layer race)
 - [ ] Outbound HTTP/DB calls have explicit timeouts (no `await` without timeout in critical paths)
-- [ ] Auth flows: token consumption (`UPDATE ... WHERE token=X AND used=false RETURNING ...`) atomic, not select-then-update
+- [ ] Auth flows: token consumption (`UPDATE ... WHERE token=X AND used=false RETURNING ...`) atomic, not
+      select-then-update
 
 #### Redirect Validation
 
@@ -821,7 +845,8 @@ return redirect(target)
 
 #### Policy Consistency (Cross-cutting)
 
-When the codebase exposes a setting or UI string that promises a security property (required MFA, session timeout, password strength floor), trace the enforcement point and confirm it delivers the promise.
+When the codebase exposes a setting or UI string that promises a security property (required MFA, session timeout,
+password strength floor), trace the enforcement point and confirm it delivers the promise.
 
 **Red Flag:**
 ```python
@@ -859,7 +884,8 @@ General floor:
 
 ### Per-category severity floor
 
-When the rubric below disagrees with intuition, use the higher severity. Authentication and authorization findings start at **High**.
+When the rubric below disagrees with intuition, use the higher severity. Authentication and authorization findings start
+at **High**.
 
 | Finding                                                       | Floor    | Promotes to                                                |
 |---------------------------------------------------------------|----------|------------------------------------------------------------|
@@ -897,13 +923,17 @@ When the rubric below disagrees with intuition, use the higher severity. Authent
 
 ## Delegating to Subagents
 
-When scope is large, delegating file clusters to `Explore` subagents is fine, but the bar for a "clean" report back is evidence, not assertion. Reject reports that say "cluster X: clean" or "checked, OK" without specifics.
+When scope is large, delegating file clusters to `Explore` subagents is fine, but the bar for a "clean" report back is
+evidence, not assertion. Reject reports that say "cluster X: clean" or "checked, OK" without specifics.
 
 Require each cluster report to include:
-- For every claim of the form "Y is not vulnerable to Z", quote the `file:line` that proves it (a parameterized query, an escape call, a role check dependency, etc.).
-- If the subagent found the absence of something (e.g., "no `| safe` without justification"), require the exact `grep` command it ran and a count.
+- For every claim of the form "Y is not vulnerable to Z", quote the `file:line` that proves it (a parameterized query,
+  an escape call, a role check dependency, etc.).
+- If the subagent found the absence of something (e.g., "no `| safe` without justification"), require the exact `grep`
+  command it ran and a count.
 
-If a subagent returns only narrative summaries, re-delegate with an explicit "quote the lines" instruction or do the cluster yourself.
+If a subagent returns only narrative summaries, re-delegate with an explicit "quote the lines" instruction or do the
+cluster yourself.
 
 ## Finding Format
 
@@ -925,8 +955,7 @@ Example fix:
 query = f"SELECT * FROM users WHERE email = '{email}'"
 
 # Fixed (parameterized):
-query = "SELECT * FROM users WHERE email = %s"
-cursor.execute(query, (email,))
+query = "SELECT * FROM users WHERE email = %s" cursor.execute(query, (email,))
 ```
 
 ---
@@ -934,7 +963,8 @@ cursor.execute(query, (email,))
 
 ## Negative Findings (Evidence Required)
 
-A clean review is more credible when the absence of issues is *demonstrated*, not asserted. Every report includes a "checked but clean" section. The bar is the same one applied to subagent reports: cite `file:line` evidence.
+A clean review is more credible when the absence of issues is *demonstrated*, not asserted. Every report includes a
+"checked but clean" section. The bar is the same one applied to subagent reports: cite `file:line` evidence.
 
 ```markdown
 ## Categories Checked
@@ -965,13 +995,15 @@ A clean review is more credible when the absence of issues is *demonstrated*, no
 - `webauthn.md` — no WebAuthn usage detected
 ```
 
-Reports without this section are incomplete. "Looks fine" / "checked, OK" is not acceptable. If a category cannot be evidenced (no relevant code in scope), say so explicitly under Skipped with the reason.
+Reports without this section are incomplete. "Looks fine" / "checked, OK" is not acceptable. If a category cannot be
+evidenced (no relevant code in scope), say so explicitly under Skipped with the reason.
 
 ## Module Versioning Rule
 
 Every module declares `version: <int>` and `last_updated: YYYY-MM-DD` in frontmatter.
 
-- **Bump `version`** when a checklist item is added, removed, or its meaning changes. Cosmetic edits (typo fixes, link updates) do not bump.
+- **Bump `version`** when a checklist item is added, removed, or its meaning changes. Cosmetic edits (typo fixes, link
+  updates) do not bump.
 - **Update `last_updated`** on every merge that touches the module.
 - A module with `last_updated` older than 12 months should be revisited as part of any review that loads it.
 
@@ -990,8 +1022,10 @@ When invoked programmatically (via Agent tool), skip all interactive workflows:
 
 If the prompt includes a list of files:
 1. Read each changed file
-2. Run module discovery (list `modules/*.md`, parse frontmatter, match `applies_to` against changed files / dependency manifests, load matches)
-3. Run the static-analyzer pre-pass scoped to the changed files (`semgrep --baseline-ref=origin/main` for diff-only, `ruff check --select=S` on the changed files)
+2. Run module discovery (list `modules/*.md`, parse frontmatter, match `applies_to` against changed files / dependency
+   manifests, load matches)
+3. Run the static-analyzer pre-pass scoped to the changed files (`semgrep --baseline-ref=origin/main` for diff-only,
+   `ruff check --select=S` on the changed files)
 4. Scan for all OWASP categories relevant to the changes
 5. Report findings only
 
@@ -999,10 +1033,12 @@ If the prompt includes a list of files:
 
 If the prompt does not specify files:
 1. Run `git diff --name-only origin/main...HEAD` to enumerate changed files
-2. Skip files matching `tests/**`, `**/test_*.py`, `migrations/**`, `**/*.md` unless they are security-relevant configs (e.g. `.env.example`, `docker-compose.yml`, `Dockerfile`, `nginx.conf`)
+2. Skip files matching `tests/**`, `**/test_*.py`, `migrations/**`, `**/*.md` unless they are security-relevant configs
+   (e.g. `.env.example`, `docker-compose.yml`, `Dockerfile`, `nginx.conf`)
 3. Continue from step 2 of Mode A
 
-If `git diff` returns nothing, fall back to listing files modified in the last commit (`git diff --name-only HEAD~1 HEAD`). If still empty, abort with "no changes to review."
+If `git diff` returns nothing, fall back to listing files modified in the last commit (`git diff --name-only HEAD~1
+HEAD`). If still empty, abort with "no changes to review."
 
 ### Reporting
 

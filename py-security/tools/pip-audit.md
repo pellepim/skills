@@ -44,6 +44,7 @@ Backed by Google's OSV database. Strong for non-Python ecosystems too (useful in
 
 ## Triage
 
-- Triage by **exploitability in your context**, not just CVSS. A `pyyaml` CVE in a service that never accepts user YAML is lower priority than the same CVE on an inbound webhook.
+- Triage by **exploitability in your context**, not just CVSS. A `pyyaml` CVE in a service that never accepts user YAML
+  is lower priority than the same CVE on an inbound webhook.
 - Pin the **fix version**, not just the next minor. Re-run after updating to confirm the alert clears.
 - Transitive dependencies count. If a direct dep has no fixed version, look for a maintained fork or replace the dep.

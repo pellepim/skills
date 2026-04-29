@@ -14,7 +14,8 @@ last_updated: 2026-04-29
 
 # GraphQL Security Patterns
 
-Optional module for the `/security` skill. Apply when the project exposes a GraphQL API (Strawberry, Ariadne, Graphene, or raw graphql-core).
+Optional module for the `/security` skill. Apply when the project exposes a GraphQL API (Strawberry, Ariadne, Graphene,
+or raw graphql-core).
 
 ## 1. Query Depth and Complexity
 

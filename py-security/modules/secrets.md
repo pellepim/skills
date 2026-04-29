@@ -33,7 +33,8 @@ DATABASE_URL = os.environ["DATABASE_URL"]
 - [ ] Run `gitleaks detect --log-opts="origin/main..HEAD"` (see `tools/gitleaks.md`)
 - [ ] `.env` in `.gitignore`; only `.env.example` (with placeholder values) committed
 - [ ] No tokens / keys in `settings.py`, `config.py`, `Dockerfile`, `docker-compose.yml`, CI files
-- [ ] No secrets in test fixtures that could be confused for real credentials (use clearly-fake values like `test-token-fake`)
+- [ ] No secrets in test fixtures that could be confused for real credentials (use clearly-fake values like
+      `test-token-fake`)
 - [ ] No secrets in URL strings logged by middleware (`postgresql://user:pass@...` redacted in logs)
 
 ## 2. When a Secret Leaks
@@ -42,27 +43,35 @@ DATABASE_URL = os.environ["DATABASE_URL"]
 1. **Rotate the credential immediately.** Removing the commit does not revoke it.
 2. Audit access logs for unauthorized use during the exposure window.
 3. Notify on-call / security team per incident policy.
-4. Optionally rewrite git history (`git filter-repo` or `BFG`) — only after rotation, only if the leaked commit has not been pulled by external parties.
+4. Optionally rewrite git history (`git filter-repo` or `BFG`) — only after rotation, only if the leaked commit has not
+   been pulled by external parties.
 5. Add the leaked-secret pattern to `.gitleaks.toml` allowlist *only* if it is a documented test fixture.
 
-**Anti-pattern:** removing the secret in a follow-up commit and assuming it's gone. The git history retains it; treat as compromised.
+**Anti-pattern:** removing the secret in a follow-up commit and assuming it's gone. The git history retains it; treat as
+compromised.
 
 ## 3. Runtime Loading
 
 **Checklist:**
-- [ ] Secrets loaded from environment at startup, OR from a secret manager (AWS Secrets Manager, GCP Secret Manager, Vault, Doppler) at request time with caching
-- [ ] Secret-manager calls have a timeout and graceful failure mode (do not crash on transient outage; serve cached value briefly)
+- [ ] Secrets loaded from environment at startup, OR from a secret manager (AWS Secrets Manager, GCP Secret Manager,
+      Vault, Doppler) at request time with caching
+- [ ] Secret-manager calls have a timeout and graceful failure mode (do not crash on transient outage; serve cached
+      value briefly)
 - [ ] Secrets not logged at any level (`logger.debug` included)
 - [ ] Secrets not exposed in error pages, debug toolbars, or `/health` endpoints
-- [ ] Secrets not echoed back in API responses (e.g. "your API key is X" — link the user to a separate retrieve endpoint with reauth)
+- [ ] Secrets not echoed back in API responses (e.g. "your API key is X" — link the user to a separate retrieve endpoint
+      with reauth)
 
 ## 4. Rotation
 
 **Checklist:**
-- [ ] Rotation procedure documented for every secret class (DB password, API keys, JWT signing keys, SECRET_KEY, OAuth client secrets, webhook signing secrets)
-- [ ] Rotation supports overlap windows: new and old keys both valid during cutover (Django `SECRET_KEY_FALLBACKS`, JWT `kid` rotation, dual webhook secrets)
+- [ ] Rotation procedure documented for every secret class (DB password, API keys, JWT signing keys, SECRET_KEY, OAuth
+      client secrets, webhook signing secrets)
+- [ ] Rotation supports overlap windows: new and old keys both valid during cutover (Django `SECRET_KEY_FALLBACKS`, JWT
+      `kid` rotation, dual webhook secrets)
 - [ ] Rotation does not require a deploy if possible (secret manager integration, hot reload)
-- [ ] Long-lived service-account credentials replaced with short-lived tokens (workload identity, OIDC federation) where the platform supports it
+- [ ] Long-lived service-account credentials replaced with short-lived tokens (workload identity, OIDC federation) where
+      the platform supports it
 
 ## 5. Secret-Manager-Specific Hygiene
 

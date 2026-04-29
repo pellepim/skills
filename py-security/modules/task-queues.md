@@ -15,7 +15,8 @@ last_updated: 2026-04-29
 
 # Task Queue / Background Job Security Patterns
 
-Optional module for the `/security` skill. Apply when the project uses background task processing (Celery, RQ, Dramatiq, Huey, Arq, or custom queue workers).
+Optional module for the `/security` skill. Apply when the project uses background task processing (Celery, RQ, Dramatiq,
+Huey, Arq, or custom queue workers).
 
 Covers: Celery, RQ (Redis Queue), Dramatiq, Huey, Arq, and custom implementations.
 

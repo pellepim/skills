@@ -10,11 +10,13 @@ last_updated: 2026-04-29
 
 # Flask Security Patterns
 
-Apply when the project uses Flask. Quart shares most of these (async variant). Flask-RESTful, Flask-Smorest, Flask-Login concerns covered inline.
+Apply when the project uses Flask. Quart shares most of these (async variant). Flask-RESTful, Flask-Smorest, Flask-Login
+concerns covered inline.
 
 ## 1. SECRET_KEY and Session Integrity
 
-Flask sessions are *signed*, not encrypted, by default — any client can read session contents. Forgery is the threat model, not confidentiality.
+Flask sessions are *signed*, not encrypted, by default — any client can read session contents. Forgery is the threat
+model, not confidentiality.
 
 **Red Flags:**
 ```python
@@ -54,7 +56,8 @@ return render_template_string("Hello {{ name }}", name=request.args["name"])
 
 **Checklist:**
 - [ ] Grep `render_template_string` — every call's first arg is a static string, not f-string with request data
-- [ ] User-authored templates (CMS / email templates feature) use `jinja2.SandboxedEnvironment` AND assume sandbox bypass exists
+- [ ] User-authored templates (CMS / email templates feature) use `jinja2.SandboxedEnvironment` AND assume sandbox
+      bypass exists
 - [ ] `app.jinja_env.autoescape` is True (Flask default; verify not disabled)
 
 ## 3. Blueprint Auth Gaps
@@ -76,9 +79,11 @@ def require_login():
 ```
 
 **Checklist:**
-- [ ] Auth applied via `before_request` on the blueprint (centralized) OR via decorator on every route — pick one and audit consistency
+- [ ] Auth applied via `before_request` on the blueprint (centralized) OR via decorator on every route — pick one and
+      audit consistency
 - [ ] No `if request.endpoint == "..."` skip-list patterns; whitelist what's public, deny by default
-- [ ] Flask-Login `login_required` decorator on every protected view; consider `@bp.before_request` enforcement to avoid omissions
+- [ ] Flask-Login `login_required` decorator on every protected view; consider `@bp.before_request` enforcement to avoid
+      omissions
 - [ ] Role checks (admin, owner) done in a dedicated decorator, not inline; easier to audit
 - [ ] `current_user.is_authenticated` is the *only* signal trusted (not session keys, not cookies you set)
 
@@ -115,7 +120,8 @@ Flask itself ships no CSRF protection. Use Flask-WTF (`CSRFProtect`) or roll equ
 
 **Checklist:**
 - [ ] `CSRFProtect(app)` enabled OR token-based auth on all state-changing endpoints
-- [ ] AJAX endpoints either include CSRF token in header OR authenticate via `Authorization: Bearer ...` (no cookie auth)
+- [ ] AJAX endpoints either include CSRF token in header OR authenticate via `Authorization: Bearer ...` (no cookie
+      auth)
 - [ ] WTForms `validate_on_submit()` used for form submissions (includes CSRF check)
 
 ## 7. Debug Mode and the Werkzeug Console
@@ -130,7 +136,8 @@ if __name__ == "__main__":
 **Checklist:**
 - [ ] `debug=True` only when `host` is `127.0.0.1`; never on a publicly bound port
 - [ ] `FLASK_DEBUG=0` / `FLASK_ENV=production` in production
-- [ ] If debug accidentally exposed, `WERKZEUG_DEBUG_PIN` is generated each restart but the console is RCE — treat as compromise
+- [ ] If debug accidentally exposed, `WERKZEUG_DEBUG_PIN` is generated each restart but the console is RCE — treat as
+      compromise
 
 ## 8. Cookies and Headers
 
