@@ -40,7 +40,7 @@ render_template_string(f"<h1>Hello {name}</h1>")                   # name="{{con
 env = Environment(loader=FileSystemLoader("templates"))            # autoescape=False by default!
                                                                    # only auto-on for .html/.xml/.htm via select_autoescape
 
-# SAFE - autoescape on by default
+# SAFE - autoescape explicitly enabled via select_autoescape (Jinja2 default is autoescape=False)
 env = Environment(loader=FileSystemLoader("templates"), autoescape=select_autoescape(["html", "xml", "htm", "j2", "jinja"]))
 
 # SAFE - render fixed template, pass user data as variable

@@ -100,11 +100,11 @@ class SocAdapter(DefaultSocialAccountAdapter):
 "Wrong password"
 
 # VULNERABLE - signup says "email already taken" -> enumerates accounts
-ACCOUNT_PREVENT_ENUMERATION = False                                # DEPRECATED in newer versions; default is now True
+ACCOUNT_PREVENT_ENUMERATION = False                                # default flipped to True in allauth ≥0.51; explicit False re-opens enumeration
 ```
 
 **Checklist:**
-- [ ] `ACCOUNT_PREVENT_ENUMERATION = True` (default in current versions; verify not overridden)
+- [ ] `ACCOUNT_PREVENT_ENUMERATION = True` (default since allauth 0.51; verify not explicitly overridden to False)
 - [ ] Password-reset endpoint always returns the same response shape regardless of whether the account exists ("If an account exists, an email has been sent")
 - [ ] Signup with an already-registered email triggers a notice email to the existing account, not a UI error revealing existence
 - [ ] Rate-limit `reset_password_email` and `signup` per IP and per email key (`ACCOUNT_RATE_LIMITS`)
