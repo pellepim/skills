@@ -10,6 +10,7 @@ overview), and any supporting modules or tools.
 | Skill                              | Purpose                                                                    |
 |------------------------------------|----------------------------------------------------------------------------|
 | [`py-security`](./py-security)     | OWASP Top 10 vulnerability assessment for Python projects                  |
+| [`node-security`](./node-security) | OWASP Top 10 vulnerability assessment for Node.js / JS / TS projects       |
 
 ## Installation
 

@@ -1,0 +1,22 @@
+rules:
+  - id: no-tls-reject-unauthorized-false
+    message: |
+      TLS certificate verification disabled. `rejectUnauthorized: false` accepts
+      any certificate and breaks authenticity guarantees, enabling MITM. Remove
+      the option, or pass a `ca:` bundle (`ca: fs.readFileSync('/etc/ssl/internal-ca.pem')`)
+      for private CAs.
+    severity: ERROR
+    languages: [javascript, typescript]
+    metadata:
+      category: security
+      cwe: "CWE-295: Improper Certificate Validation"
+      owasp: "A02:2021 - Cryptographic Failures"
+      references:
+        - https://nodejs.org/api/tls.html#tlsconnectoptions-callback
+    pattern-either:
+      - pattern: |
+          { ..., rejectUnauthorized: false, ... }
+      - pattern: |
+          process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+      - pattern: |
+          process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0"

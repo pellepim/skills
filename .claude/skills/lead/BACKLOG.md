@@ -6,10 +6,10 @@ Maintained by `/lead`. See `SKILL.md` for format and verbs.
 
 ## L-001: Node/TS backend security skill
 
-- Status: open
+- Status: done
 - Priority: high
 - Created: 2026-04-29
-- Updated: 2026-04-29
+- Updated: 2026-04-30
 - Tags: security, node, typescript
 - Owner: unassigned
 
@@ -29,6 +29,14 @@ surface and weakest static tooling.
 
 ### Notes
 - 2026-04-29: Created. Suggested order Node first, then .NET, then Java.
+- 2026-04-30: Done. Skill at `node-security/` mirrors `py-security/` with
+  framework modules (express, fastify, nestjs, koa, next-api), ORM modules
+  (prisma, typeorm, sequelize, knex, mongoose), auth modules (passport,
+  next-auth, custom-jwt, express-session), feature modules (file-upload,
+  graphql, websocket, oauth2, saml, webauthn, email, multitenancy,
+  task-queues, templating), plus always-on `secrets.md` and
+  `lang-pitfalls.md` (proto pollution, ReDoS, child_process, vm escape,
+  ESM/CJS).
 
 ---
 
