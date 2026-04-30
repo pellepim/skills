@@ -24,20 +24,23 @@ Two modes:
 - **Headless.** Hand it a file list (or let it diff against `origin/main`) and it produces a report you
   can drop in a PR.
 
-Either way, every finding cites `file:line`, and every clean category cites `file:line` evidence too.
-"Looks fine" is rejected; a negative finding must point at the parameterized query, the ownership check,
-the `algorithms=["RS256"]` pin that proves the absence of the issue. That keeps reviewer-trust high and
-stops "I checked, all good" reports from sneaking through.
+Either way, the format asks every finding to cite `file:line`, and every clean category to cite
+`file:line` evidence too. "Looks fine" without a citation is rejected by the SKILL.md contract; a
+negative finding is supposed to point at the parameterized query, the ownership check, the
+`algorithms=["RS256"]` pin that proves the absence of the issue. The agent can still get this wrong,
+but the format raises the bar above "I checked, all good".
 
 Severity is governed by a per-category rubric (e.g. `pickle.loads` on untrusted input is Critical;
-missing security headers is Low), so severity does not drift between reviewers or between runs.
+missing security headers is Low). Reviewers still interpret edge cases, but the rubric reduces drift
+between reviewers and between runs.
 
 ## Modules
 
-The piece worth knowing as a contributor is the module system in [`modules/`](./modules). Each module
-declares `applies_to:` triggers (framework, dependency, feature, or `any`) in frontmatter, and the skill
-auto-loads the matching ones at scan start based on imports and lockfiles. A Django+SAML repo gets
-different checklists than a FastAPI+Stripe repo without anyone having to remember to ask for them.
+Modules live in [`modules/`](./modules). Each declares `applies_to:` triggers (framework, dependency,
+feature, or `any`) in frontmatter; SKILL.md instructs the agent to match these against project imports
+and lockfiles at scan start and load the matching modules. A Django+SAML repo and a FastAPI+Stripe repo
+end up with different checklists. Match quality depends on the agent following the discovery procedure
+correctly; a mis-detected dependency can mean a skipped module.
 
 Adding coverage for a new framework or feature is a copy of [`modules/_template.md`](./modules/_template.md).
 No edit to `SKILL.md` needed.
@@ -46,8 +49,10 @@ No edit to `SKILL.md` needed.
 
 - Run it on every non-trivial PR. Diff-only mode is cheap.
 - Use the static pre-pass output as the floor; treat manual checklists as the ceiling.
-- When you see a finding you disagree with, push back with a `file:line` of the safe pattern. That same
-  evidence is what the report will cite next time, and the skill gets sharper over time.
+- When you disagree with a finding, push back with a `file:line` of the safe pattern. There is no
+  automatic learning loop: the skill is static markdown, fresh per run. To make pushback stick, edit
+  the relevant module to refine the checklist wording, or capture the project-specific safe pattern
+  in `CLAUDE.md` so subsequent runs see it as context.
 
 ## Wiring It Up
 
@@ -70,4 +75,6 @@ See the [repo root README](../README.md#invoking-a-skill) for headless / CI invo
 
 - No code fixes. Reports findings only.
 - No penetration testing. Code review only.
-- No assumptions. Verifies against actual usage.
+- No runtime testing. Static review of the source as committed.
+- Not a substitute for human review on high-impact changes (auth, payments, data export). The skill
+  flags known patterns; novel logic bugs and business-rule flaws still need human eyes.
