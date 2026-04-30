@@ -3,8 +3,8 @@ name: Secrets Management Patterns
 description: Committed secrets, .env discipline, key rotation, KMS/secret-manager usage
 applies_to:
   - any
-version: 1
-last_updated: 2026-04-29
+version: 2
+last_updated: 2026-04-30
 ---
 
 # Secrets Management Patterns
@@ -98,7 +98,70 @@ compromised.
 - [ ] Build artifacts scanned with `gitleaks` before publication (catches secrets baked into Docker images)
 - [ ] `docker history` / image layer inspection does not reveal `ARG SECRET=...` (use `--mount=type=secret` in BuildKit)
 
-## 7. Local Development
+## 7. Bundler / Build Artifact Leakage (Python-specific)
+
+Python build pipelines have several non-obvious places where secrets sneak into shipped
+artifacts. Server-side Python does not have a frontend bundler in the JS sense, but `wheel`,
+`sdist`, container images, single-file executables, and managed-platform configs all act as
+"bundlers" that can include `.env` or hardcoded credentials.
+
+**Red Flags:**
+```toml
+# VULNERABLE - over-inclusive package_data / MANIFEST.in pulls .env into the wheel
+# pyproject.toml
+[tool.setuptools.package-data]
+mypkg = ["*"]                                                      # ships every file in mypkg/, including any local .env
+
+# MANIFEST.in
+recursive-include mypkg *                                          # same risk for sdist
+include .env                                                       # explicit foot-bullet
+```
+
+```dockerfile
+# VULNERABLE - ARG visible in docker history; persists in image layers
+ARG STRIPE_SECRET
+ENV STRIPE_SECRET=$STRIPE_SECRET                                   # baked into image layer
+
+# VULNERABLE - COPY .env into image
+COPY . /app                                                        # if .env not in .dockerignore, it ships
+
+# SAFE - BuildKit secret mount (not persisted in layers)
+# syntax=docker/dockerfile:1.4
+RUN --mount=type=secret,id=stripe_key \
+    STRIPE_SECRET=$(cat /run/secrets/stripe_key) ./build.sh
+```
+
+```python
+# VULNERABLE - Streamlit / HuggingFace Spaces - secrets file committed or readable
+# .streamlit/secrets.toml committed to repo (if public Space, world-readable)
+# HuggingFace Space repo is public by default; "Repository secrets" must be set via the UI,
+# not as files in the repo
+
+# VULNERABLE - PyInstaller / Nuitka single-file binary contains baked .env
+# pyinstaller --add-data ".env:." main.py                          # .env shipped inside the .exe
+# nuitka --include-data-file=.env=.env main.py                     # same
+```
+
+```bash
+# VULNERABLE - editable install picks up uncommitted .env via package_data
+pip install -e .                                                   # then `python -m mypkg` reads .env from the installed
+                                                                   # location; if .env later checked in by mistake or
+                                                                   # included in `python -m build`, leaks
+```
+
+**Checklist:**
+- [ ] `pyproject.toml` `[tool.setuptools.package-data]` and `MANIFEST.in` reviewed - no `*`/`recursive-include ... *` patterns that pull `.env`, `.env.*`, `*.pem`, `*.key`, `id_rsa`, `credentials.json`, `service-account*.json`
+- [ ] `.dockerignore` includes `.env`, `.env.*`, `**/.env`, `*.pem`, `id_rsa*`, `.git`, `__pycache__`, `.pytest_cache`
+- [ ] Dockerfile uses `--mount=type=secret` (BuildKit) for build-time secrets; never `ARG` or `ENV` for production credentials
+- [ ] `docker history <image>` and `dive` against built image inspected; no `ARG SECRET=...` or copied `.env` visible in layer history
+- [ ] Streamlit Cloud / HuggingFace Spaces / Replicate / Modal: secrets configured via the platform UI / managed-secret API, never committed to repo - public Spaces / Streamlit-Cloud-public apps expose any committed file
+- [ ] PyInstaller / Nuitka / py2exe / cx_Freeze: `--add-data` / `include-data-file` does not include `.env`, config with secrets, or service-account JSON; `gitleaks detect` run against the produced `.exe` / single-file binary before publish (binaries embed file contents as bytes, recoverable with `strings` / `binwalk`)
+- [ ] PyPI packages built from a clean checkout (CI), not the developer's working directory - prevents accidentally shipping `.env`
+- [ ] `python -m build` output (`dist/*.whl`, `dist/*.tar.gz`) inspected once before first publish: `unzip -l dist/*.whl` / `tar tzf dist/*.tar.gz` reviewed for stray secrets / config files
+- [ ] Editable installs (`pip install -e .`) audited - `<package>.egg-info/SOURCES.txt` lists everything packaged; should not include `.env`
+- [ ] Lambda / Cloud Run / serverless deploys: deployment package built from a CI artifact, not local `zip`; CI job has `.env` excluded from the build context
+
+## 8. Local Development
 
 **Checklist:**
 - [ ] `.env.example` committed with placeholder values; real `.env` ignored

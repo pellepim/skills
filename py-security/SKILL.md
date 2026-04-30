@@ -508,6 +508,8 @@ data = json.loads(request.body)
 - [ ] No `eval()` or `exec()` on user input
 - [ ] JWT properly validated (signature, expiration, issuer)
 
+For implicit-pickle libraries (`joblib`, `torch.load`, `pd.read_pickle`, `numpy.load(allow_pickle=True)`, `shelve`), Celery serializer config, and `__reduce__` attack surface, see `modules/lang-pitfalls.md`.
+
 #### Insufficient Logging (A09)
 
 **Checklist:**

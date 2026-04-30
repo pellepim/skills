@@ -99,7 +99,7 @@ likely needs separate sub-modules.
 
 ## L-004: py-security lang-pitfalls always-on module
 
-- Status: open
+- Status: done
 - Priority: medium
 - Created: 2026-04-30
 - Updated: 2026-04-30
@@ -119,11 +119,19 @@ module index.
   money, dict-ordering assumptions, signal handlers in multi-threaded servers.
 - Trim SKILL.md to a one-line pointer where overlap.
 
+### Notes
+- 2026-04-30: Done. `py-security/modules/lang-pitfalls.md` covers pickle (incl. joblib /
+  torch.load / numpy.load / shelve), eval/exec, GIL false-confidence (incl. PEP 703),
+  sync-driver-in-async, ContextVars loss across await/threads, monkey-patching order,
+  str.format attribute leak, Decimal vs float, dict-ordering for HMAC canonicalization,
+  signal handlers in threads, subprocess env inheritance. SKILL.md A08 has a one-line
+  pointer.
+
 ---
 
 ## L-005: py-security NoSQL / Mongo module
 
-- Status: open
+- Status: done
 - Priority: medium
 - Created: 2026-04-30
 - Updated: 2026-04-30
@@ -142,11 +150,16 @@ Mongo operator-injection coverage missing from py-security; node-security has it
 - Multi-tenant scope on `find_one(_id=...)`.
 - Aggregation pipeline operator audit.
 
+### Notes
+- 2026-04-30: Done. `py-security/modules/pymongo.md` covers pymongo / motor / mongoengine
+  / beanie / umongo. Sections: operator injection, mass assignment, ObjectId validation,
+  multi-tenant scope, aggregation, TLS, GridFS, change streams.
+
 ---
 
 ## L-006: py-security custom-jwt module
 
-- Status: open
+- Status: done
 - Priority: medium
 - Created: 2026-04-30
 - Updated: 2026-04-30
@@ -166,11 +179,16 @@ projects auto-load it, parallel to node-security's `custom-jwt.md`.
 - Refresh-token rotation, reuse detection, family revocation.
 - Session-token-as-JWT antipattern (revocation list / short TTL).
 
+### Notes
+- 2026-04-30: Done. `py-security/modules/custom-jwt.md` covers PyJWT / python-jose /
+  authlib / jwcrypto. Includes python-jose CVE-2024-33663/33664 callouts, PyJWKClient
+  caching example, JWE-specific section.
+
 ---
 
 ## L-007: py-security templating module
 
-- Status: open
+- Status: done
 - Priority: low
 - Created: 2026-04-30
 - Updated: 2026-04-30
@@ -189,11 +207,17 @@ SKILL.md and framework modules. Consolidate.
 - React-SSR equivalent: HTMX swap returning rendered ORM partial leaks fields - link to
   framework modules.
 
+### Notes
+- 2026-04-30: Done. `py-security/modules/templating.md` covers Jinja2 (incl. Sandboxed
+  vs Immutable env), Django (mark_safe vs format_html), Mako (default_filters footgun),
+  Chameleon, Genshi, SVG, email header injection, PDF/HTML renderer SSRF (WeasyPrint,
+  xhtml2pdf, Playwright).
+
 ---
 
 ## L-008: py-security framework-auth modules
 
-- Status: open
+- Status: done
 - Priority: low
 - Created: 2026-04-30
 - Updated: 2026-04-30
@@ -210,11 +234,16 @@ node-security's per-library auth coverage (`passport.md`, `next-auth.md`).
 - `python-social-auth.md`: pipeline ordering, association vs disconnection.
 - `flask-login.md`: session loader, fresh-login, remember-me cookie.
 
+### Notes
+- 2026-04-30: Done. Four new auth-library modules added: `django-allauth.md`,
+  `authlib.md`, `python-social-auth.md`, `flask-login.md`. Each declares
+  dependency-based triggers; cross-link to oauth2.md / custom-jwt.md / framework modules.
+
 ---
 
 ## L-009: py-security secrets bundler-leakage section
 
-- Status: open
+- Status: done
 - Priority: low
 - Created: 2026-04-30
 - Updated: 2026-04-30
@@ -231,3 +260,9 @@ missing from `py-security/modules/secrets.md`.
 - PyInstaller / Nuitka bundles - run gitleaks against build artifacts before publish.
 - `pip install` of editable local package picks up uncommitted `.env` if shipped in package
   data.
+
+### Notes
+- 2026-04-30: Done. `secrets.md` now has Section 7 "Bundler / Build Artifact Leakage"
+  covering MANIFEST.in / package_data, .dockerignore, BuildKit secret mounts,
+  Streamlit/HuggingFace Spaces, PyInstaller/Nuitka, editable installs, CI-built artifacts.
+  Module bumped to version 2.
