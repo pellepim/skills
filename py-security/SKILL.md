@@ -1,8 +1,8 @@
 ---
 name: py-security
 description: Security Agent - Identify OWASP Top 10 vulnerabilities and security issues in Python projects
-version: 1
-last_updated: 2026-04-29
+version: 2
+last_updated: 2026-04-30
 ---
 
 # Security Agent - Vulnerability Assessment Mode
@@ -69,6 +69,32 @@ last_updated: <YYYY-MM-DD>
 modules.
 
 **Adding a module:** copy `_template.md`, fill frontmatter, write Red Flags + Checklists. No edit to `SKILL.md` needed.
+
+## Project Notes (`.claude/security-review.md`)
+
+Per-project learnings persist in a file inside the **target repo**, not this skill's source tree:
+`.claude/security-review.md` at the repo root. The file is shared across security-review skills (e.g.
+`node-security`); both load it.
+
+Typical contents (free-form Markdown, suggested H2 sections):
+- **Safe Patterns:** project-specific helpers / wrappers that make a pattern safe (e.g. "all DB access
+  goes through `app.db.query(sql, params)` which parameterizes; do not flag string interpolation inside
+  that helper").
+- **Suppressions:** known false positives with `file:line` and reason.
+- **Severity Overrides:** project-specific severity floor adjustments (e.g. "this is an internal admin
+  tool; missing CSRF on `/admin/*` is Low, not Medium").
+- **Out of Scope:** paths explicitly excluded from review (e.g. `legacy/`).
+
+**Discovery procedure (run BEFORE module discovery and static pre-pass):**
+1. Look for `.claude/security-review.md` at the repo root.
+2. If present, read it. Treat its content as authoritative project context.
+3. While scanning: skip findings the file documents as safe; adjust severity per overrides; exclude
+   scoped-out paths.
+4. In the final report, record which suppressions / overrides applied and which did not, citing the
+   line in `.claude/security-review.md`.
+
+The file is human-edited. The skill writes to it only via the "Capture Learnings" step below, and only
+with explicit per-entry user approval.
 
 ## Workflow
 
@@ -878,6 +904,29 @@ For each vulnerability:
 
 Report all findings to the user. Do not modify any code.
 
+### 5. Capture Learnings (interactive only)
+
+After delivering the report, ask the user:
+
+> "Should any of this run's outcomes be persisted to `.claude/security-review.md`? Candidates:
+> a finding you pushed back on with a project-specific safe pattern, a false positive that should
+> not recur, a severity floor that should adjust for this codebase, or a path to mark out of scope."
+
+If the user answers yes:
+1. Propose specific entries. Each entry has a target H2 section (Safe Patterns / Suppressions /
+   Severity Overrides / Out of Scope), the `file:line` evidence, and a one-sentence rationale.
+2. Get explicit approval per entry. Do not bundle approval.
+3. Append to `.claude/security-review.md`. If the file does not exist, create it with a header and
+   the four standard H2 sections, then append.
+4. Never overwrite existing content; only append under the appropriate H2.
+5. Confirm what was written and to which section.
+
+If the user declines, do not write to the file.
+
+Skip this step in Headless Mode (no interactive user). Instead, include a **"Suggested Additions to
+`.claude/security-review.md`"** advisory section at the end of the report; the human reviewing the
+PR can copy items they accept.
+
 ## Severity Guide
 
 General floor:
@@ -1057,6 +1106,11 @@ Also report **negatives with evidence**:
 - Categories triggered
 - Categories clean (with `file:line` citations of the safe pattern, not just "looks fine")
 - Modules loaded vs skipped (with reason for skip)
+
+Also include **"Suggested Additions to `.claude/security-review.md`"** as an advisory section listing
+candidate entries (each with target H2, `file:line`, and rationale). Do not write to
+`.claude/security-review.md` in headless mode; only the human reviewing the PR can decide what
+sticks.
 
 If no issues found, say so explicitly. Do not edit any files.
 

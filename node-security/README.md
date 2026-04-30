@@ -51,10 +51,21 @@ Adding coverage for a new framework or feature is a copy of
 
 - Run it on every non-trivial PR. Diff-only mode is cheap.
 - Use the static pre-pass output as the floor; treat manual checklists as the ceiling.
-- When you disagree with a finding, push back with a `file:line` of the safe pattern. There is no
-  automatic learning loop: the skill is static markdown, fresh per run. To make pushback stick,
-  edit the relevant module to refine the checklist wording, or capture the project-specific safe
-  pattern in `CLAUDE.md` so subsequent runs see it as context.
+- When you disagree with a finding, push back with a `file:line` of the safe pattern. After the run,
+  the skill asks whether to persist any of this run's outcomes (project-specific safe patterns,
+  false positives, severity overrides, out-of-scope paths) to `.claude/security-review.md` in the
+  target repo. Approve per entry; the file is human-edited, never overwritten.
+
+## Project Notes (`.claude/security-review.md`)
+
+Per-project learnings live in `.claude/security-review.md` at the **target repo's** root, not in
+this skill's source tree. The skill reads it at scan start and uses it to skip known-safe patterns,
+suppress known false positives, adjust severity for the codebase, and exclude scoped-out paths.
+Both `node-security` and `py-security` share the file.
+
+The file is created on first use (with user approval per entry) and grows as a project accumulates
+review history. In headless / CI mode the skill never writes to the file; instead it includes a
+"Suggested Additions" advisory section in the report so a human can decide.
 
 ## Wiring It Up
 
